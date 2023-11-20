@@ -1,0 +1,15 @@
+language: python
+os:
+- linux
+python:
+- '3.6'
+install:
+- pip install .
+script: echo "no test"
+deploy:
+  provider: pypi
+  username: __token__
+  on:
+    tags: true
+  password:
+    secure: e3PqRK5HeLyl+ojYb6j0HM3K8/3pkuOONpwWXgJjDVqL3torFNMJTkqtB81jba2EBwqeOwS9iFq3v6ccjhwgZyImPFS/Zfhu44eS9JOMDKxR4LSoc5bT4yhaeQIIHER8vDPXMJaQs/5sDs42/s1zkpDpBch8pcZf2TnKlOUnLk6IGi22EMlimLwOdtsGHdJQub6YTPDCt9Ohq3bXrn58NSZwfNAfV9A368r50wjGfL+jxRiMU5os7i75cc/zsZVvmXDl2RE6x8y2n6NZWeWUZYn2lqD/0sY1MmdxTBclgznf0rscYLaQwNqFRmjjz/3QeM1TKquAYhUa8DvyDIV7wkc93orrxbZAfVU/yzlHb3tiY9FdnZ1mkGKqXSBc0zvuap3FDOgtCu/YfeWT5SARF2zZSblj2xrNjzZJo+K+Z/cVtAEnJMm26LBqnl2iBnZqUMM68sQeGlrrR070Q416jDkrx7f8MoFkJ6t9kuH29XuZhngScywiJfdPMQRthQkIwOhRJA2m7HYkUCLdexYqWQIx6zjjUineXwWUkPP9dMWYrTjkhHJBHuD4mGyTpxCGBbmZ5yRIJfeY3Fv67QB6eugso2E1CwOKx2R8yc+gEVkkmEVlHfWF5usxpFhDYMBblkixWrpXTZv75kmEAA1/mzj9vE7h/16TU9tz/999Pvw=

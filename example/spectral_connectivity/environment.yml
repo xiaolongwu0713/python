@@ -1,0 +1,22 @@
+name: spectral_connectivity
+channels:
+- conda-forge
+- defaults
+dependencies:
+- numpy
+- matplotlib
+- scipy
+- xarray
+- nitime
+- pytest
+- pytest-cov
+- coveralls
+- setuptools
+- jupyter
+- numpydoc
+- sphinx
+- sphinx-copybutton
+- sphinx-autoapi
+- jupyter
+- jupyterlab
+- nb_conda

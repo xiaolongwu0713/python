@@ -1,0 +1,9 @@
+1: trial begin with rest.
+2: cue onset
+3: green dot show up
+4: green dot disappear, screen black and start to move or image.
+
+21-26: 3 ME + 3 MI
+
+1--(2.5s)--23--(1.5s)--3--(1s)--4--(4s)--1--(2.5s)--23--(1.5s)--3--(1s)--4--(4s)--1
+epoch: (-2s)--23--(6.5s)

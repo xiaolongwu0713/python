@@ -1,0 +1,51 @@
+
+from parallel_wavegan.utils import PRETRAINED_MODEL_LIST
+print(PRETRAINED_MODEL_LIST.keys())
+
+from parallel_wavegan.utils import download_pretrained_model
+download_pretrained_model("ljspeech_parallel_wavegan.v1", "pretrained_model")
+
+parallel-wavegan-preprocess \
+    --config ~/tmp/vocoder/pretrained_model/csmsc_parallel_wavegan.v1/config.yml \
+    --rootdir ~/tmp/vocoder/sample \
+    --dumpdir ~/tmp/vocoder/dump/sample/raw
+
+parallel-wavegan-normalize \
+    --config ~/tmp/vocoder/pretrained_model/csmsc_parallel_wavegan.v1/config.yml \
+    --rootdir ~/tmp/vocoder/dump/sample/raw \
+    --dumpdir ~/tmp/vocoder/dump/sample/norm \
+    --stats ~/tmp/vocoder/pretrained_model/csmsc_parallel_wavegan.v1/stats.h5
+
+parallel-wavegan-decode \
+    --checkpoint ~/tmp/vocoder/pretrained_model/csmsc_parallel_wavegan.v1/checkpoint-400000steps.pkl \
+    --dumpdir ~/tmp/vocoder/dump/sample/norm \
+    --outdir ~/tmp/vocoder/sample
+
+
+parallel-wavegan-preprocess \
+    --config C:\\Users\\wuxiaolong\\tmp\\vocoder\\pretrained_model\\csmsc_parallel_wavegan.v1\\config.yml \
+    --rootdir C:\\Users\\wuxiaolong\\tmp\\vocoder\\sample \
+    --dumpdir C:\\Users\\wuxiaolong\\tmp\\vocoder\\dump\\sample\\raw
+
+parallel-wavegan-normalize \
+    --config C:\\Users\\wuxiaolong\\tmp\\vocoder\\pretrained_model\\csmsc_parallel_wavegan.v1\\config.yml \
+    --rootdir C:\\Users\\wuxiaolong\\tmp\\vocoder\\dump\\sample\\raw \
+    --dumpdir C:\\Users\\wuxiaolong\\tmp\\vocoder\\dump\\sample\\norm \
+    --stats C:\\Users\\wuxiaolong\\tmp\\vocoder\\pretrained_model\\csmsc_parallel_wavegan.v1\\stats.h5
+
+parallel-wavegan-decode \
+    --checkpoint C:\\Users\\wuxiaolong\\tmp\\vocoder2\\pretrained_model\\csmsc_parallel_wavegan.v1\\checkpoint-400000steps.pkl \
+    --dumpdir C:\\Users\\wuxiaolong\\tmp\\vocoder2\\dump\\sample\\norm \
+    --outdir C:\\Users\\wuxiaolong\\tmp\\vocoder2\\sample
+
+
+import h5py
+f = h5py.File('/Users/xiaowu/tmp/vocoder/dump/sample/raw/recording.h5', 'r')
+feature=np.array(f.get('feats')) # (89004, 80)
+fig,ax=plt.subplots()
+ax.imshow(feature.transpose(),origin='lower',cmap='RdBu_r')
+ax.set_aspect('auto')
+ax.clear()
+
+f = h5py.File('/Users/xiaowu/tmp/vocoder/dump/sample/norm/recording.h5', 'r')
+feature=np.array(f.get('feats')) # (89004, 80)

@@ -1,0 +1,7 @@
+*.pcy
+.idea
+.ipynb_checkpoints
+__pycache__
+data/
+data/oxfordmanrealizedvolatilityindices.csv
+data/mit-bih-arrhythmia-database-1.0.0

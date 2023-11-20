@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="style.css">
+  <title>LassoNet: Neural Networks with Feature Sparsity</title>
+  <!-- <meta property="og:image" content="" /> -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.2/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.2/dist/katex.min.js">
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.2/dist/contrib/auto-render.min.js">
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      renderMathInElement(document.body, {
+        // customised options
+        // • auto-render specific keys, e.g.:
+        delimiters: [{
+            left: '$$',
+            right: '$$',
+            display: true
+          },
+          {
+            left: '$',
+            right: '$',
+            display: false
+          },
+          {
+            left: '\\(',
+            right: '\\)',
+            display: false
+          },
+          {
+            left: '\\[',
+            right: '\\]',
+            display: true
+          }
+        ],
+        // • rendering keys, e.g.:
+        throwOnError: false
+      });
+    });
+  </script>
+
+  <meta property="og:title" content="LassoNet: Neural Networks with Feature Sparsity " />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net/">
+</head>
+
+<body>
+  <br>
+  <h1 class=center>LassoNet: Neural Networks with Feature Sparsity</h1>
+
+  <table id=authors class=center>
+    <tr>
+      <td>
+        <a href="https://ismael.lemhadri.org/">Ismael Lemhadri</a>
+      </td>
+      <td>
+        <a href="https://fengruan.github.io/">Feng Ruan</a>
+      </td>
+      <td>
+        <a href="https://louisabraham.github.io/">Louis Abraham</a>
+      </td>
+      <td>
+        <a href="https://statweb.stanford.edu/~tibs/">Rob Tibshirani</a>
+      </td>
+  </table>
+
+  <table id=links class=center>
+    <tr>
+      <td>
+        <a href='https://arxiv.org/pdf/1907.12207.pdf'>[Paper]</a>
+      </td>
+      <td>
+        <a href='https://github.com/ilemhadri/lassonet'>[Code]</a>
+      </td>
+      <td>
+        <a href='./api'>[Docs]</a>
+      </td>
+      <td>
+        <a href='https://ismael.lemhadri.org/papers/pdf/lassonet_poster.pdf'>[Poster]</a>
+      </td>
+      <td>
+        <a href='https://ismael.lemhadri.org/papers/pdf/lassonet_slides.pdf'>[Slides]</a>
+      </td>
+    </tr>
+  </table>
+
+  <img class="center" src="fig1.png" height="300px"></img>
+
+  <p>
+    <b>LassoNet</b> is a method for feature selection in neural networks, to enhance interpretability of the final
+    network.
+    <ul>
+      <li>It uses a novel objective function and learning algorithm, that encourage the network to use only a subset of
+        the available input features, that is the resulting network is <b>"feature sparse"</b></li>
+      <li> This is achieved not by post-hoc analysis of a standard neural network but is <b>built into objective
+          function
+          itself</b>:
+        <ul>
+          <li>Input to output (skip layer) connections are added to the network with an L1 penalty on its weights</li>
+          <li>The weight for each feature in this layer acts as an upper bound for all hidden layer weights involving
+            that feature</li>
+        </ul>
+      </li>
+      <li> The result is an <b>entire path of network solutions</b>, with varying amounts of feature sparsity. This is
+        analogous to the lasso solution path for linear regression
+      </li>
+    </ul>
+  </p>
+
+  <hr>
+
+  <h1>LassoNet in 2 minutes</h1>
+  <iframe src="https://drive.google.com/file/d/159LPc6EZDKq79rWTXQgfBlTt-CaPoO8k/preview" width="640"
+    height="480"></iframe>
+
+  <hr>
+
+  <h1>Installation</h1>
+
+  <pre style="text-align: center;">pip install lassonet</pre>
+
+  <hr>
+  <div>
+    <h1>Tips</h1>
+
+    LassoNet sometimes require fine tuning. For optimal performance, consider:
+    <ul>
+      <li>standardizing the inputs</li>
+      <li>making sure that the initial dense model (with $\lambda = 0$) has trained well, before starting the LassoNet
+        regularization
+        path. This may involve hyper-parameter tuning, choosing the right optimizer, and so on. If the dense model is
+        underperforming, it is likely that the sparser models will as well.</li>
+      <li>making sure the stepsize over the $\lambda$ path is not too large. By default, the stepsize runs in geometric
+        increments until there is no feature left.
+      </li>
+    </ul>
+
+  </div>
+
+
+  <div>
+    <h1>Intro video</h1>
+    <iframe src="https://www.youtube.com/embed/G5vPojso9PU" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe>
+
+    <h1>Talk</h1>
+    <iframe src="https://www.youtube.com/embed/ztGcoMPazwc" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe>
+    <br>
+  </div>
+
+  <hr>
+
+  <div>
+    <h1>Citation</h1>
+    The algorithms and method used in this package came primarily out of research in Rob Tibshirani's lab at Stanford
+    University. If you use LassoNet in your research we would appreciate a citation to the paper:
+    <pre>
+      @article{lemhadri2019neural,
+        title={LassoNet: Neural Networks with Feature Sparsity},
+        author={Lemhadri, Ismael and Ruan, Feng and
+                Abraham, Louis and Tibshirani, Robert},
+        journal={arXiv preprint arXiv:1907.12207},
+        year={2019}
+      }
+    </pre>
+  </div>
+
+</body>
+
+</html>
