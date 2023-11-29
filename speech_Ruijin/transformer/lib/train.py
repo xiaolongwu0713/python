@@ -24,7 +24,7 @@ class Batch:
                 self.trg = trg.to(device)
                 self.trg_y = trg.to(device)
             else:
-                self.trg = trg[:, :-1,:].to(device)
+                self.trg = trg[:, :-1,:].to(device) # TODO: why -1 here
                 self.trg_y = trg[:, 1:,:].to(device) # used as 'teacher forcing' in training process
             self.trg_mask = self.make_std_mask(self.trg, pad).to(device)
             self.ntokens = self.trg_y.size(1)
@@ -124,7 +124,7 @@ def output_prediction2(model, ts_test, ls_test, max_len, start_symbol, output_d,
     src_mask = test_batch.src_mask
 
     with torch.no_grad():
-        # feed input to encoder to get memory output which is one of the inputs to decoder
+        # feed input to encoder to get memory output, then feed it to decoder
         memory,att_encoder = model.encode(src.float(), src_mask)
         ys = torch.ones(batch_size, 1, output_d).fill_(start_symbol).to(device)
 
