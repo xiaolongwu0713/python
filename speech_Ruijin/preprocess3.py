@@ -1,5 +1,5 @@
 '''
-align EEG and audio using the trigger line exported from curry
+Read data exported from curry
 '''
 
 from datetime import datetime
@@ -28,6 +28,8 @@ file = data_dir+ "P" + str(sid)+"/raw/EEG/session"+ str(session+1) + "_curry.edf
 raw = mne.io.read_raw_edf(file) # include=ele_name
 raw.load_data().notch_filter(np.arange(50, 251, 50))
 raw.filter(l_freq=1,h_freq=None) # optional
+raw.plot(duration=100,time_format='float',scalings=dict(eeg=50e-5))
+
 # inspect the data and exclude bad channels
 bad_channels=raw.info['bads']
 raw.drop_channels(bad_channels) # pick and drop the bad channels

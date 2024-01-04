@@ -1,14 +1,21 @@
+import re
+
 import mne
 import matplotlib.pyplot as plt
 import numpy as np
-from MIME_Huashan.config import  data_dir
+from MIME_Huashan.config import data_dir
 
-sub_names=['HHFU016_0714','017_0725','0815_Ma_JinLiang_0815','HHFU22_0902','HHFU026_1102']
-sub_name=sub_names[-2]
+sub_names=['HHFU016_0714','017_0725','0815_Ma_JinLiang_0815','HHFU22_0902','HHFU026_1102','HHFU027_motorimagery']
+# 'HHFU027_motorimagery': a,b,c,d,e,f,g,h shafts; each have 8 contacts; 8*8=64 electrodes;
+sub_name=sub_names[-1]
 filename=data_dir+'raw/'+sub_name+'/eeg.edf'
 raw = mne.io.read_raw_edf(filename,preload=True)
 #ch_index_str=[str(chi)+'_'+channels[chi].strip() for chi in [*range(len(channels))]]
 #ch_index=[*range(len(channels))] #147
+
+'''
+channels are grouped into bad/EMG/DC/EEG;
+'''
 if sub_names=='HHFU016':
     ch_names = raw.ch_names
     ch_types=[]
@@ -42,9 +49,31 @@ elif sub_names=='017':
         else:
             ch_types.append('eeg')
 
+elif sub_names=='HHFU027_motorimagery': # channel names contain string [a,b,c,d,e,f,g,h][1,2,3,4,5,6,7,8];
+    bad_channels=['POL E','POL EKG1','POL EKG2','POL EMGL1','POL EMGL2','POL EMGR1','POL EMGR2',
+                  'POL SS1','POL SS2','POL SS3','POL SS4','POL SS5','POL SS6','POL SS7','POL SS8','POL SS9','POL SS10',
+                  'POL BP1','POL BP2','POL BP3','POL BP4']
+    emg_channels=['POL B27','POL B28','POL B29','POL B30','POL B31','POL B32','POL B33','POL B34']
+    use_channels=[]
+    DC_chanenls=[]
+    ch_types=[]
+
+    for chi in raw.ch_names:
+        if 'POL DC' in chi:
+            ch_types.append('stim')
+        elif chi in emg_channels:
+            ch_types.append('emg')
+        else:
+            ch_types.append('eeg')
+        #elif re.match(".*[A-G][1-8].*",chi) and not any([i in chi for i in emg_channels+['EKG','SS','BP']]):
+
+
+
+plot_channels=10
+raw.plot(duration=100,time_format='clock',n_channels=plot_channels, scalings=dict(eeg=50e-5))
 
 fs = round(raw.info['sfreq'])
-info = mne.create_info(ch_names=ch_names, ch_types=ch_types, sfreq=fs)
+info = mne.create_info(ch_names=raw.ch_names, ch_types=raw.get_channel_types(), sfreq=fs)
 raw = mne.io.RawArray(raw.get_data(), info)
 raw.resample(sfreq=1000)
 

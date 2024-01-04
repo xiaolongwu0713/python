@@ -280,7 +280,7 @@ if __name__=="__main__":
     winL = opt['winL']
     frameshift = opt['frameshift']
     melbins=23
-    data_name='mydata' # 'SingleWordProductionDutch'/'mydata'/'Huashan'
+    data_name='SingleWordProductionDutch' # 'SingleWordProductionDutch'/'mydata'/'Huashan'
     if data_name=='mydata':
         sid=5
         session=1

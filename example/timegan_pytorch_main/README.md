@@ -18,7 +18,7 @@ data/                         # the folder holding the datasets and preprocessin
   ├ data_preprocessing.py     # the data preprocessing functions
   └ stock.csv                 # the example stock data derived from the original repo
 metrics/                      # the folder holding the metric functions for evaluating the model
-  ├ preprocess.py                # the dataset class for feature predicting and one-step ahead predicting
+  ├ preprocess_V1.py                # the dataset class for feature predicting and one-step ahead predicting
   ├ general_rnn.py            # the model for fitting the dataset during TSTR evaluation
   ├ metric_utils.py           # the main function for evaluating TSTR
   └ visualization.py          # PCA and t-SNE implementation for time series taken from the original repo

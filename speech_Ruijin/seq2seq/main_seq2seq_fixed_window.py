@@ -100,7 +100,7 @@ if dataname=='closed_loop_seeg_speech_synthesis': # not good, very bad in tempor
     train_ds = myDataset(tmp1[:point1], tmp2[:point1])
     val_ds = myDataset(tmp1[point1:point2], tmp2[point1:point2])
     test_ds = myDataset(tmp1[point2:], tmp2[point2:])
-elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch # not good, very bad in temporal dimension, good in spectral dimension
+elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
     from speech_Ruijin.baseline_linear_regression.extract_features import dataset
     x, y = dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False,winL=winL, frameshift=frameshift,
                    target_SR =target_SR,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow)

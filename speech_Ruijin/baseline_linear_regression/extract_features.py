@@ -175,20 +175,6 @@ def nameVector(elecs, modelOrder=4):
 
 def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,
             stepSize=5,winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False):
-    if computer == 'mac':
-        path_bids = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch'
-        path_output = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch/features'
-    elif computer == 'workstation':
-        path_bids = r'H:\Long\data\SingleWordProductionDutch-iBIDS'
-        path_output = r'H:\Long\data\SingleWordProductionDutch-iBIDS\features'
-    elif computer == 'Yoga':
-        path_bids = r'D:\data\SingleWordProductionDutch'
-        path_output = r'D:\data\SingleWordProductionDutch\features'
-    elif computer == 'google':
-        path_bids = r'/content/drive/MyDrive/data/SingleWordProductionDutch'
-        path_output = '/content/drive/MyDrive/data/SingleWordProductionDutch/features'
-    # participants = pd.read_csv(os.path.join(path_bids,'participants.tsv'), delimiter='\t')
-    # for p_id, participant in enumerate(participants['participant_id']):
 
     if dataset_name == 'mydata':
         from scipy.io import wavfile
@@ -214,6 +200,20 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         audio_sr, audio = wavfile.read(filename)
         #target_SR = 16000
     elif dataset_name == 'SingleWordProductionDutch':  # not my data
+        if computer == 'mac':
+            path_bids = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch'
+            path_output = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch/features'
+        elif computer == 'workstation':
+            path_bids = r'H:\Long\data\SingleWordProductionDutch-iBIDS'
+            path_output = r'H:\Long\data\SingleWordProductionDutch-iBIDS\features'
+        elif computer == 'Yoga':
+            path_bids = r'D:\data\BaiduSyncdisk\SingleWordProductionDutch'
+        elif computer == 'google':
+            path_bids = r'/content/drive/MyDrive/data/SingleWordProductionDutch'
+            path_output = '/content/drive/MyDrive/data/SingleWordProductionDutch/features'
+        # participants = pd.read_csv(os.path.join(path_bids,'participants.tsv'), delimiter='\t')
+        # for p_id, participant in enumerate(participants['participant_id']):
+
         # Load data
         participant = 'sub-' + f"{sid:02d}"
         filename = os.path.join(path_bids, participant, 'ieeg', f'{participant}_task-wordProduction_ieeg.nwb')

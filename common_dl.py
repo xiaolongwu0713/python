@@ -9,6 +9,8 @@ from torch.utils.data import Dataset, DataLoader
 
 cuda = torch.cuda.is_available()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+if cuda:
+    print('common_dl.py: Using CUDA.')
 #device = torch.device('cpu') # ad-hoc
 FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if torch.cuda.is_available() else torch.LongTensor

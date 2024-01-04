@@ -1,5 +1,4 @@
 from pdb import set_trace as db
-
 import numpy as np
 import librosa
 import pydub
@@ -7,12 +6,10 @@ from librosa import load
 from librosa.util import fix_length
 import os
 import copy
-from pdb import set_trace as db
-
 import soundfile
-
-import librosa.display
-
+#import librosa.display # this package messed up the plt package;
+import matplotlib.pyplot as plt
+fig,ax=plt.subplots()
 # We'll need IPython.display's Audio widget
 from IPython.display import Audio
 
@@ -26,8 +23,6 @@ seg = 512
 sf = 48000 # sampling frequency of wav file # (recorded at 16 bit, 48 KHz)
 
 audio, sf = load(wav, sr=sf, mono=False)
-import matplotlib.pyplot as plt
-fig,ax=plt.subplots(1,1)
 
 track = 0
 seen = []
@@ -213,13 +208,4 @@ for i in range(300):
     seg += 1
 
 soundfile.write('output5.wav', audio, sf)
-
-
-
-aa=r'E:\Bristol\experiment\imagery_speech_English_Southmead\audio\square_wave\5_second_wavs\1.wav'
-audio, sf = load(aa, sr=sf)
-
-
-
-
 

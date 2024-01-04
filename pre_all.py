@@ -1,3 +1,9 @@
+## A timer to calculate the running period
+from util import my_timer
+## Indicate the name of the script file
+#import __main__ as main
+#print('Running '+ main.__file__+'.') # only works when execute in CMD, but not IDE
+## TODO: what's this?
 import sys,os
 sys.dont_write_bytecode = True
 
@@ -21,16 +27,17 @@ if socket.gethostname() == 'LongsMac': # or laptop
     else:
         top_data_dir = '/Volumes/second/data_local/' #'/Users/long/Documents/data/'# temp data dir
     #tmp_data_dir='/Users/long/Documents/data/gesture/'
-    top_root_dir = '/Users/long/'+driver+'/python/'  # this is project root on google drive
-    top_meta_dir = '/Users/long/'+driver+'/meta/'
+    top_root_dir = '/Users/xiaowu/'+driver+'/python/'  # this is project root on google drive
+    top_meta_dir = '/Users/xiaowu/'+driver+'/meta/'
+    tmp_dir = '/Users/xiaowu/tmp/python_log/'
     computer='mac'
 elif socket.gethostname() == 'Long': # Yoga
     # sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
-    top_data_dir = 'D:/data/'
+    top_data_dir = 'D:/data/BaiduSyncdisk/'
     # tmp_data_dir='/Users/long/Documents/data/gesture/'
-    top_root_dir = 'C:/Users/xiaowu/' + driver + '/python/'
-    top_meta_dir = 'C:/Users/xiaowu/' + driver + '/meta/'
+    mydriver='C:/Users/xiaowu/' + driver
     computer = 'Yoga'
+    tmp_dir='D:/tmp/python_log/'
 elif socket.gethostname() == 'DESKTOP-FBDP919': # or laptop
     #sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
     top_data_dir = 'G:/data/'
@@ -64,6 +71,22 @@ if re.compile('/content/drive').match(location):  # googleDrive
     info_dir = '/content/drive/MyDrive/data/'
     top_meta_dir = '/content/drive/MyDrive/data/'
     computer = 'google'
+
+## try to log everything
+from datetime import datetime
+class Logger(object):
+    def __init__(self, filename="Default.log"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        self.log.flush()
+logfilename=tmp_dir+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
+sys.stdout = Logger(filename=logfilename)
 
 colors=['orangered','skyblue','orange','springgreen','aquamarine','yellow','gold']
 
