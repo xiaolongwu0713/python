@@ -29,12 +29,16 @@ from speech_Ruijin.seq2seq.opt import opt_SingleWordProductionDutch as opt
 from pre_all import set_random_seeds
 set_random_seeds(99999)
 
-dataname='SingleWordProductionDutch'
-if running_from_CMD: # run from cmd on workstation
+if running_from_CMD:
     sid = int(float(sys.argv[1]))
+    dataname = sys.argv[2] #'SingleWordProductionDutch'
+    time_stamp=sys.argv[3]
+    testing=False
 else:
-    sid = 3
-
+    sid=3
+    dataname = 'SingleWordProductionDutch'
+    time_stamp='testing_time'
+    testing=True
 ###############
 mel_bins=opt['mel_bins']
 winL=opt['winL']
@@ -74,8 +78,9 @@ print('sid: '+str(sid)+ '; Testing:'+str(testing)+'. wind:'+str(win)+', stride:'
 
 ############### create result folder
 the_time=datetime.now(pytz.timezone('Asia/Shanghai'))
-result_dir=data_dir+'seq2seq/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'\
-           +the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')
+#result_dir=data_dir+'seq2seq/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'+the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')
+result_dir=data_dir+'seq2seq/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'+time_stamp
+
 if testing:
     result_dir=result_dir+'_testing/'
 else:
