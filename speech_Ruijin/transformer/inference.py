@@ -1,7 +1,3 @@
-'''
-The inference script for both seq2seq and the transformer models.
-'''
-
 import sys,os,glob
 import sys
 import socket
@@ -44,10 +40,12 @@ if running_from_CMD:
     sid = int(float(sys.argv[1]))
     dataname = sys.argv[2] #'SingleWordProductionDutch'
     time_stamp=sys.argv[3]
+    mel_bins = sys.argv[4]
 else:
     dataname='SingleWordProductionDutch'
     sid=3
     time_stamp='dummy'
+    mel_bins = 80
 
 if dataname=='mydata':#'SingleWordProductionDutch'/'mydata' # 'SingleWordProductionDutch' (10 subjects)/'stereoEEG2speech_master'(3 subjects)
     from speech_Ruijin.transformer.opt import opt_mydata as opt
@@ -55,11 +53,6 @@ elif dataname=='SingleWordProductionDutch':
     from speech_Ruijin.transformer.opt import opt_SingleWordProductionDutch as opt
 
 ############
-sf_EEG = opt['sf_EEG']
-mel_bins = opt['mel_bins']
-stride = opt['stride']
-step_size = opt['step_size']
-model_order = opt['model_order']
 use_the_official_tactron_with_waveglow = opt['use_the_official_tactron_with_waveglow']
 if use_the_official_tactron_with_waveglow:
     target_SR = 22050
@@ -68,6 +61,11 @@ if use_the_official_tactron_with_waveglow:
 else:
     winL = opt['winL']
     frameshift = opt['frameshift']
+sf_EEG = opt['sf_EEG']
+#mel_bins = opt['mel_bins']
+stride = opt['stride']
+step_size = opt['step_size']
+model_order = opt['model_order']
 win = math.ceil(opt['win'] / frameshift)  # int: steps
 history = math.ceil(opt['history'] / frameshift)  # int(opt['history']*sf_EEG) # int: steps
 baseline_method = opt['baseline_method']
@@ -75,6 +73,12 @@ stride_test = opt['stride_test']
 ##################
 print('baseline_method: ' + str(opt['baseline_method']) +'; win: ' + str(win) + '; history:' +
       str(history) + '; stride:' + str(stride)+'; winL:'+str(winL)+'; frameshift: '+str(frameshift)+'.')
+
+# device=torch.device('cpu')
+if computer == 'workstation' or computer == 'Yoga':
+    result_dir = data_dir + 'seq2seq_transformer/' + dataname + '/' + 'mel_' + str(mel_bins) + '/sid_' + str(sid) + '/' + time_stamp + '/'
+elif computer == 'mac':
+    result_dir = '/Users/xiaowu/tmp/models/seq2seq_transformer/' + time_stamp + '/'
 
 #for sid,folder_date in zip([sids[i-1] for i in sid_idx],[folder_dates[i-1] for i in sid_idx]):
 #for sid,folder_date, epoch in zip([sids[i-1] for i in sid_idx],[folder_dates[i-1] for i in sid_idx], [epochs[i-1] for i in sid_idx]):
@@ -144,12 +148,6 @@ out_len = y_test.shape[1] #(batch,feature,time)-->(batch,time, feature)
 dataset_test = myDataset(x_test, y_test)
 batch_size = opt_transformer['batch_size']
 dataloader_test = DataLoader(dataset=dataset_test, batch_size=batch_size, shuffle=False)
-
-# device=torch.device('cpu')
-if computer == 'workstation' or computer == 'Yoga':
-    result_dir = data_dir + 'seq2seq_transformer/' + dataname + '/' + 'mel_' + str(mel_bins) + '/sid_' + str(sid) + '/' + time_stamp + '/'
-elif computer == 'mac':
-    result_dir = '/Users/xiaowu/tmp/models/seq2seq_transformer/' + time_stamp + '/'
 
 path_file = result_dir +  'best_model_epoch*'+'.pth' # '19_final.pth'
 path_file = os.path.normpath(glob.glob(path_file)[0])

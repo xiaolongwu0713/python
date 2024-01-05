@@ -3,7 +3,7 @@ opt_SingleWordProductionDutch={
 'norm_EEG':True,
 'mel_bins':23,
 'target_SR':22050,
-'use_the_official_tactron_with_waveglow':False,
+'use_the_official_tactron_with_waveglow':True,
 'winL':0.05, # feature extraction
 'frameshift':0.01, # feature extraction
 'win':0.1,
@@ -27,6 +27,29 @@ opt_SingleWordProductionDutch={
 'batch_size':128,
 'sf_EEG':1024
 }
+
+opt_mydata={
+'sf_EEG':1000,
+'norm_mel':False,
+'norm_EEG':True,
+'mel_bins':23,
+'step_size':5,
+'modelOrder':4,
+'winL':0.05, # feature extraction
+'frameshift':0.01, # feature extraction
+'win':0.05, # 25 samples
+'history':0.02,
+'stride':50,
+'use_pca':False,
+'test_shift':300,
+
+'baseline_method':True, # average the EEG signal
+'win_baseline':10,
+'history_baseline':10,
+'stride_baseline':2,
+'stride_test':5,
+}
+
 
 channel_numbers=[127,127,127,115,60,127,127,54,117,122]
 

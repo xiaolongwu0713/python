@@ -38,11 +38,13 @@ if running_from_CMD:
     sid = int(float(sys.argv[1]))
     dataname = sys.argv[2] #'SingleWordProductionDutch'
     time_stamp=sys.argv[3]
+    mel_bins=sys.argv[4]
     testing=False
 else:
     sid=3
     dataname = 'SingleWordProductionDutch'
     time_stamp='testing_time'
+    mel_bins=80
     testing=True
 testing=(testing or debugging or computer=='mac')
 
@@ -55,7 +57,7 @@ elif dataname=='SingleWordProductionDutch':
 
 ###############
 sf_EEG=opt['sf_EEG']
-mel_bins=opt['mel_bins']
+#mel_bins=opt['mel_bins']
 target_SR=opt['target_SR']
 step_size=opt['step_size']
 model_order=opt['model_order']

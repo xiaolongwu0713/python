@@ -161,7 +161,7 @@ class EncoderDecoder(torch.nn.Module):
         self.decoder = decoder
         self.out_features=self.decoder.out_features
 
-    def forward(self, enc_X, dec_X, *args):
+    def forward(self, enc_X, dec_X, *args): # enc_X:(time,batch,channel); dec_X:(time, batch, feature/mel_bins)
         enc_all_outputs = self.encoder(enc_X, *args)
         dec_state = self.decoder.init_state(enc_all_outputs, *args)
         # Return decoder output only

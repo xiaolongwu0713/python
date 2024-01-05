@@ -6,6 +6,8 @@ elif socket.gethostname() == 'LongsMac':
     sys.path.extend(['/Users/long/My Drive/python'])
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
+elif socket.gethostname() == 'Long': # Yoga
+    sys.path.extend(['C:/Users/xiaowu/mydrive/python/'])
 
 import io
 import time
@@ -33,14 +35,16 @@ if running_from_CMD:
     sid = int(float(sys.argv[1]))
     dataname = sys.argv[2] #'SingleWordProductionDutch'
     time_stamp=sys.argv[3]
+    mel_bins = sys.argv[4]
     testing=False
 else:
     sid=3
     dataname = 'SingleWordProductionDutch'
     time_stamp='testing_time'
+    mel_bins=80
     testing=True
 ###############
-mel_bins=opt['mel_bins']
+#mel_bins=opt['mel_bins']
 winL=opt['winL']
 target_SR=opt['target_SR']
 frameshift=opt['frameshift']
@@ -108,7 +112,7 @@ if dataname=='closed_loop_seeg_speech_synthesis': # not good, very bad in tempor
 elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
     from speech_Ruijin.baseline_linear_regression.extract_features import dataset
     x, y = dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False,winL=winL, frameshift=frameshift,
-                   target_SR =target_SR,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow)
+                   target_SR =target_SR,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow) #(25863, 127),(25863, 80)
     xy_ratio = y.shape[0] / x.shape[0]
     print('x,y ratio: ' + str(xy_ratio) + '.')
 
@@ -116,7 +120,7 @@ elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
     leny = y.shape[0]
     train_x = x[:int(lenx * 0.8), :]  # (246017, 127)
     val_x = x[int(lenx * 0.8):int(lenx * 0.9), :]
-    test_x = x[int(lenx * 0.9):, :]
+    test_x = x[int(lenx * 0.9):, :] # (2587, 127)
     train_y = y[:int(leny * 0.8), :]
     val_y = y[int(leny * 0.8):int(leny * 0.9), :]
     test_y = y[int(leny * 0.9):, :]
@@ -134,12 +138,12 @@ elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
         std = np.std(test_x, axis=0)
         test_x = (test_x - mu) / std
 
-    win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride, stride * xy_ratio
-    x_train, y_train = fold_2d23d(train_x.transpose(), train_y[history:, :].transpose(), win_x, win_y, shift_x,shift_y)
-    x_val, y_val = fold_2d23d(val_x.transpose(), val_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y)
-    stride_test = stride  # could be different from train/val stride
+    win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride, stride * xy_ratio # 18,9,1,1
+    x_train, y_train = fold_2d23d(train_x.transpose(), train_y[history:, :].transpose(), win_x, win_y, shift_x,shift_y) # (20672, 127, 18)
+    x_val, y_val = fold_2d23d(val_x.transpose(), val_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y) # (2568, 127, 18)
+    stride_test = stride # 1 # could be different from train/val stride
     win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride_test, stride_test * xy_ratio
-    x_test, y_test = fold_2d23d(test_x.transpose(), test_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y)
+    x_test, y_test = fold_2d23d(test_x.transpose(), test_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y)# x_test: (2569, 127, 18)
 
     dataset_train = myDataset(x_train, y_train)
     dataset_val = myDataset(x_val, y_val)
@@ -169,10 +173,10 @@ train_size=len(dataset_train)
 val_size=len(dataset_val)
 test_size=len(dataset_test)
 
-ch_num=dataset_train[0][0].shape[0]
+ch_num=dataset_train[0][0].shape[0] # 127
 in_features=ch_num
-out_len=dataset_train[0][1].shape[1]
-out_features=dataset_train[0][1].shape[0]
+out_len=dataset_train[0][1].shape[1] #9
+out_features=dataset_train[0][1].shape[0] #80
 #device = torch.device('cpu') # GPU is too slow, because of the GRU?
 #source_len=1000
 #tgt_len=500
@@ -233,8 +237,8 @@ for epoch in tqdm(range(epoch_num)):
     running_loss = 0.0
     y_preds=[]
     for i, (trainx, trainy) in enumerate(dataloader_train):
-        src = trainx.float().permute(2,0,1).to(device) #(time,batch,feature)
-        tgt = trainy.float().permute(2,0,1).to(device) # torch.Size([295, 1, 80])
+        src = trainx.float().permute(2,0,1).to(device) #(time,batch,feature) torch.Size([18, 3, 127])
+        tgt = trainy.float().permute(2,0,1).to(device) # torch.Size([9, 3, 80])
 
         optimizer.zero_grad()
         y_pred,_ = net(src,tgt[1:,:,:]) # torch.Size([147time, 1batch, 80])

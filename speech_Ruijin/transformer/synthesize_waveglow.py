@@ -36,10 +36,11 @@ if running_from_CMD:
     sid = int(float(sys.argv[1]))
     dataname = sys.argv[2] #'SingleWordProductionDutch'
     time_stamp=sys.argv[3]
-    folder_date=time_stamp
+    mel_bins = sys.argv[4]
 else:
     sid=3
     dataname = 'SingleWordProductionDutch'
+    mel_bins = 80
 fig,ax=plt.subplots()
 audio_sr=22050
 
@@ -65,7 +66,7 @@ baseline_method = opt['baseline_method']
 stride_test = opt['stride_test']
 #########
 result_dir = data_dir + 'seq2seq_transformer/' + dataname + '/' + 'mel_' + str(mel_bins) + '/sid_' + str(
-                sid) + '/' + folder_date + '/'
+                sid) + '/' + time_stamp + '/'
 
 waveglow=torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_waveglow', model_math='fp32')
 waveglow = waveglow.remove_weightnorm(waveglow)

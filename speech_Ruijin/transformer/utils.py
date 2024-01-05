@@ -41,7 +41,7 @@ def test_transformer_model(sid,model,opt,dataloader_test,result_dir):
     return predictions2, truths2
 
 
-def test_seq2seq_model(net,dataloader_test,result_dir):
+def test_seq2seq_model(net,dataloader_test):
     loss_fun = torch.nn.MSELoss()
     predictions=[]
     truths=[]
@@ -55,7 +55,7 @@ def test_seq2seq_model(net,dataloader_test,result_dir):
             # src,tgt=src.permute(1,0,2),tgt.permute(1,0,2) # ECoG_seq2seq
             out_len = tgt.shape[0]
             # no teacher force during validation
-            output, attention_weights = net.predict_step(src, tgt[1:, :, :], out_len)  # torch.Size([1, 194, 80])
+            output, _, attention_weights = net.predict_step(src, tgt[1:, :, :], out_len)  # torch.Size([1, 194, 80])
             loss = loss_fun(output, tgt[1:, :, :])
             predictions.append(output.cpu().numpy())
             truths.append(tgt[1:, :, :].cpu().numpy())
