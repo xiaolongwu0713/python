@@ -23,7 +23,8 @@ import numpy.random as npr
 # if error happens, change this: "from scipy.misc import logsumexp" to "from scipy.special import logsumexp"
 import torch
 from torch.utils.data import DataLoader
-from speech_Ruijin.transformer.utils import test_seq2seq_model, averaging
+from speech_Ruijin.transformer.utils import averaging
+from speech_Ruijin.seq2seq.model_d2l import test_seq2seq_model
 from speech_Ruijin.seq2seq.model_d2l import Seq2SeqEncoder2, Seq2SeqAttentionDecoder, EncoderDecoder
 import math
 npr.seed(0)

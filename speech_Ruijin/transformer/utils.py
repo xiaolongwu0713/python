@@ -40,35 +40,6 @@ def test_transformer_model(sid,model,opt,dataloader_test,result_dir):
 
     return predictions2, truths2
 
-
-def test_seq2seq_model(net,dataloader_test):
-    loss_fun = torch.nn.MSELoss()
-    predictions=[]
-    truths=[]
-    net.eval()
-    with torch.no_grad():
-        for i, (test_x, test_y) in enumerate(dataloader_test):
-            #src = test_x.float().permute(1,0,2).to(device) # (batch,time,feature)-->#(time,batch,feature)
-            #tgt = test_y.float().permute(1,0,2).to(device)
-            src = test_x.float().permute(2,0,1).to(device)  # (batch,time,feature)-->#(time,batch,feature)
-            tgt = test_y.float().permute(2,0,1).to(device)
-            # src,tgt=src.permute(1,0,2),tgt.permute(1,0,2) # ECoG_seq2seq
-            out_len = tgt.shape[0]
-            # no teacher force during validation
-            output, _, attention_weights = net.predict_step(src, tgt[1:, :, :], out_len)  # torch.Size([1, 194, 80])
-            loss = loss_fun(output, tgt[1:, :, :])
-            predictions.append(output.cpu().numpy())
-            truths.append(tgt[1:, :, :].cpu().numpy())
-    predictions2 = np.concatenate(predictions, axis=1).transpose(1,0,2)
-    truths2 = np.concatenate(truths, axis=1).transpose(1,0,2)
-
-    #filename1 = result_dir + 'predictions.npy'
-    #np.save(filename1, predictions2)
-    #filename2 = result_dir + 'truths.npy'
-    #np.save(filename2, truths2)
-
-    return predictions2,truths2
-
 def averaging(pred,win,stride):
     h=pred.shape[0] # 3066
     d=pred.shape[2] # 40

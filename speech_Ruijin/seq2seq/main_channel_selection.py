@@ -333,7 +333,8 @@ for i in range(channel_tobe_selected):
         #torch.save(final_model,filename_final)
 
         ## inference
-        from speech_Ruijin.transformer.utils import test_seq2seq_model, averaging
+        from speech_Ruijin.seq2seq.model_d2l import test_seq2seq_model
+        from speech_Ruijin.transformer.utils import averaging
 
         #checkpoint = torch.load(filename_best, map_location=device)
         checkpoint=best_model
