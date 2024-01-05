@@ -1,3 +1,7 @@
+'''
+The inference script for both seq2seq and the transformer models.
+'''
+
 import sys,os,glob
 import sys
 import socket
