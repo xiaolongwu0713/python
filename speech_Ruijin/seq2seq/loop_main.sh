@@ -13,6 +13,7 @@ do
   /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe main_seq2seq_fixed_window.py $sid $dataname $time_stamp $mel_bins
   echo "-------  inference on $hostname --------"
   /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe inference.py $sid $dataname $time_stamp $mel_bins
+  #/cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe inference.py 3 SingleWordProductionDutch 2024_01_08_10_09 23
 done
 
 

@@ -3,6 +3,7 @@ opt_SingleWordProductionDutch={
 'norm_EEG':True,
 'mel_bins':23,
 'use_the_official_tactron_with_waveglow':True,
+'window_eeg':False, # False: length of final features of EEG and audio will be different
 ## feature extraction
 'target_SR':22050,
 'winL':0.05,

@@ -45,19 +45,22 @@ else:
     testing=True
 ###############
 # parameter for feature extraction
+window_eeg=opt['window_eeg']
 winL=opt['winL']
 target_SR=opt['target_SR']
 frameshift=opt['frameshift']
 use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
 if use_the_official_tactron_with_waveglow:
-    target_SR = 22050 # 48000
+    # Smaller target_SR->larger frameshift->smaller win and history length (even though the time duration is the same which is
+    # determined by the win and history parameters.)
+    target_SR = 22050 # 22050/48000
     frameshift = 256 / target_SR
     winL = 1024 / target_SR
 
 # parameter for feature sliding
 win = math.ceil(opt['win']/frameshift) # int: steps: number of shifts in a window (win)
 history=math.ceil(opt['history']/frameshift) # int: steps: number of shifts in a history window (history)
-stride=opt['stride']
+stride=opt['stride'] # in sequence length, not time
 stride_test = opt['stride_test']
 baseline_method=opt['baseline_method']
 norm_EEG=opt['norm_EEG']#True
@@ -114,8 +117,8 @@ if dataname=='closed_loop_seeg_speech_synthesis': # not good, very bad in tempor
 elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
     from speech_Ruijin.baseline_linear_regression.extract_features import dataset
     x, y = dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False,winL=winL, frameshift=frameshift,
-                   target_SR =target_SR,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow) #(25863, 127),(25863, 80)
-    xy_ratio = y.shape[0] / x.shape[0]
+                   target_SR =target_SR,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow,window_eeg=window_eeg) #(25863, 127),(25863, 80)
+    xy_ratio = x.shape[0]/y.shape[0]
     print('x,y ratio: ' + str(xy_ratio) + '.')
 
     lenx = x.shape[0]
