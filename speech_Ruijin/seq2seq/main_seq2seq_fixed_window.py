@@ -44,20 +44,24 @@ else:
     mel_bins=80
     testing=True
 ###############
-# parameter for feature extraction
+'''windowing and averaging sEEG data or no;
+If window_eeg=False, EEG high gamma feature will be used; otherwise, an averaging windowing operation will be applied;
+Because of the windowing on the audio data, the original audio sampling rate (target_SR) will be sr_audio=1/frameshift(sr_audio=100 Hz when frameshift=0.01). 
+While sampling frequency of sEEG is sr_eeg=1024, the frequency ratio of eeg and audio is ratio=sr_eeg/sr_audio(=1024/100=10.24).
+To align sEEG and audio spectrogram, 
+the window size and stride length of sEEG will be windows size of audio (win) * ratio and stride of audio (stride) * ratio. 
+
+However, because of the rounding effect, the ratio in this script will be calculated by ratio=x.shape[0]/y.shape[0](=10.21 when target_SR=22050),
+in which x and y are sEEG feature and audio spectrogram, respectively. The calculated ratio will be slightly different from ratio=sr_eeg/sr_audio.
+'''
 window_eeg=opt['window_eeg']
+# windowing parameter of audio; If window_eeg=True, these parameters will also be applied to EEG;
 winL=opt['winL']
 target_SR=opt['target_SR']
 frameshift=opt['frameshift']
 use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
-if use_the_official_tactron_with_waveglow:
-    # Smaller target_SR->larger frameshift->smaller win and history length (even though the time duration is the same which is
-    # determined by the win and history parameters.)
-    target_SR = 22050 # 22050/48000
-    frameshift = 256 / target_SR
-    winL = 1024 / target_SR
 
-# parameter for feature sliding
+# parameters of feature sliding of audio; EEG sliding parameters will be determined by EEG/audio ratio later;
 win = math.ceil(opt['win']/frameshift) # int: steps: number of shifts in a window (win)
 history=math.ceil(opt['history']/frameshift) # int: steps: number of shifts in a history window (history)
 stride=opt['stride'] # in sequence length, not time
@@ -83,7 +87,7 @@ if testing or debugging:
     batch_size = 3
 else:
     batch_size = 128
-print('sid: '+str(sid)+ '; Testing:'+str(testing)+'. wind:'+str(win)+', stride:'+str(stride)+', history:'+str(history)+'.')
+print('sid: '+str(sid)+ '; Testing:'+str(testing)+'. windL:'+str(winL)+'. Frameshift:'+str(frameshift)+'. win:'+str(win)+ '. stride:'+str(stride)+', history:'+str(history)+'.')
 
 ############### create result folder
 the_time=datetime.now(pytz.timezone('Asia/Shanghai'))
@@ -142,12 +146,13 @@ elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
         mu = np.mean(test_x, axis=0)
         std = np.std(test_x, axis=0)
         test_x = (test_x - mu) / std
-
-    win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride, stride * xy_ratio # 18,9,1,1
+    win_x, win_y, shift_x, shift_y =  (win+history)*xy_ratio, win,stride*xy_ratio,stride
+    #win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride, stride * xy_ratio # 18,9,1,1
     x_train, y_train = fold_2d23d(train_x.transpose(), train_y[history:, :].transpose(), win_x, win_y, shift_x,shift_y) # (20672, 127, 18)
     x_val, y_val = fold_2d23d(val_x.transpose(), val_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y) # (2568, 127, 18)
-    stride_test = stride # 1 # could be different from train/val stride
-    win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride_test, stride_test * xy_ratio
+    stride_test = stride # 1
+    # stride could be different from train/val stride
+    shift_x, shift_y =stride_test*xy_ratio, stride_test
     x_test, y_test = fold_2d23d(test_x.transpose(), test_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y)# x_test: (2569, 127, 18)
 
     dataset_train = myDataset(x_train, y_train)

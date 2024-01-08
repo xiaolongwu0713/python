@@ -1,17 +1,20 @@
 opt_SingleWordProductionDutch={
 'norm_mel':False,
 'norm_EEG':True,
-'mel_bins':23,
+
 'use_the_official_tactron_with_waveglow':True,
-'window_eeg':False, # False: length of final features of EEG and audio will be different
-## feature extraction
-'target_SR':22050,
+'window_eeg':False,
+
+# parameters of feature extraction for audio data; If window_eeg=True, these parameters will also be applied to EEG;
+# If False: high gamma feature will be used directly, and the length of final features of EEG and audio will be different
+'target_SR':48000, # 22050/48000
 'winL':0.05,
 'frameshift':0.01,
-## sliding
+
+## parameter of sliding for audio feature
 'win':0.1,
 'history':0.1,
-'stride':1,
+'stride':1, # sequence length
 'use_pca':False,
 
 'baseline_method':True,

@@ -54,13 +54,10 @@ fig, ax = plt.subplots(2, 1)
 
 ###############
 use_the_official_tactron_with_waveglow = opt['use_the_official_tactron_with_waveglow']
-if use_the_official_tactron_with_waveglow:
-    target_SR = 22050
-    frameshift = 256 / target_SR  # 256 steps in 0.011609977324263039 s
-    winL = 1024 / target_SR
-else:
-    winL = opt['winL']
-    frameshift = opt['frameshift']
+window_eeg=opt['window_eeg']
+winL = opt['winL']
+target_SR=opt['target_SR']
+frameshift = opt['frameshift']
 #mel_bins = opt['mel_bins']
 win = math.ceil(opt['win'] / frameshift)  # int: steps
 history = math.ceil(opt['history'] / frameshift)  # int(opt['history']*sf_EEG) # int: steps
@@ -80,8 +77,7 @@ batch_size = opt['batch_size']
 
 ##################
 
-print('baseline_method: ' + str(opt['baseline_method']) +'; win: ' + str(win) + '; history:' +
-      str(history) + '; stride:' + str(stride)+'; winL:'+str(winL)+'; frameshift: '+str(frameshift)+'.')
+print('sid: ' + str(sid) +'; winL: ' + str(winL) +'; frameshift: '+str(frameshift)+'; win:'+str(win)+'; stride:' + str(stride)+'; history:' +str(history)+'.')
 
 if computer == 'workstation' or 'Yoga':
     result_dir = data_dir + 'seq2seq/' + dataname + '/' + 'mel_' + str(mel_bins) + '/sid_' + str(sid) + '/' + time_stamp + '/'
@@ -118,9 +114,9 @@ if dataname == 'mydata':
 elif dataname == 'SingleWordProductionDutch':
     # x, y = get_data(dataname=dataname, sid=sid,continous_data=continous_data,mel_bins=mel_bins)  # x: (512482,127), y:(344858, 80)
     x, y = dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False, winL=winL,  target_SR =target_SR,frameshift=frameshift
-                   ,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow)
+                   ,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow,window_eeg=window_eeg)
 
-xy_ratio = y.shape[0] / x.shape[0]
+xy_ratio = x.shape[0]/y.shape[0]
 
 if opt['norm_mel']:
     mu = np.mean(y, axis=0)
@@ -143,9 +139,7 @@ if opt['norm_EEG']:
     train_x = (train_x - mu) / std
     val_x = (val_x - mu) / std
     test_x = (test_x - mu) / std
-
-win_x, win_y, shift_x, shift_y = win + history, int(win * xy_ratio), stride_test, int(stride_test * xy_ratio)
-# win_x, win_y, shift_x, shift_y = win, win* xy_ratio, stride, stride * xy_ratio
+win_x, win_y, shift_x, shift_y =  (win+history)*xy_ratio, win,stride_test*xy_ratio,stride_test
 x_test, y_test = fold_2d23d(test_x.transpose(), test_y[history:,:].transpose(), win_x, win_y, shift_x, shift_y)
 #x_test, y_test = x_test.transpose(0,2,1), y_test.transpose(0,2,1) #0, 2, 1
 # Get input_d, output_d, timesteps from the initial dataset

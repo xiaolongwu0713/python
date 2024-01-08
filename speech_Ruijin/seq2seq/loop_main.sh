@@ -4,7 +4,7 @@ source ~/.bash_profile
 time_stamp=`date +"%Y_%m_%d_%H_%M"`
 #time_stamp='2023_09_03_12_05'
 dataname='SingleWordProductionDutch' #'mydata'/'SingleWordProductionDutch'
-mel_bins=23
+mel_bins=80 #23/80
 
 for sid in 3 # 1 2 3 4 5 6 7 8 9 10
 #for sid in 1 3
