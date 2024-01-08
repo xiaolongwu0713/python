@@ -44,17 +44,19 @@ else:
     mel_bins=80
     testing=True
 ###############
-#mel_bins=opt['mel_bins']
+# parameter for feature extraction
 winL=opt['winL']
 target_SR=opt['target_SR']
 frameshift=opt['frameshift']
 use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
 if use_the_official_tactron_with_waveglow:
-    target_SR = 22050
+    target_SR = 22050 # 48000
     frameshift = 256 / target_SR
     winL = 1024 / target_SR
-win = math.ceil(opt['win']/frameshift) # int: steps
-history=math.ceil(opt['history']/frameshift) #int(opt['history']*sf_EEG) # int: steps
+
+# parameter for feature sliding
+win = math.ceil(opt['win']/frameshift) # int: steps: number of shifts in a window (win)
+history=math.ceil(opt['history']/frameshift) # int: steps: number of shifts in a history window (history)
 stride=opt['stride']
 stride_test = opt['stride_test']
 baseline_method=opt['baseline_method']

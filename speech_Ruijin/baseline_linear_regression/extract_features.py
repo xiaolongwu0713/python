@@ -173,6 +173,10 @@ def nameVector(elecs, modelOrder=4):
     return names.flatten()  # Add 'F' if stacked the same as matlab
 
 
+'''
+winL and frameshift are in time, rather than sequence length. 
+winL and frameshift are the same for EEG and audio data, so that the final features of EEG and audio have the same length.
+'''
 def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,
             stepSize=5,winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False):
 
@@ -199,7 +203,7 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         print('Loading ' + filename + '.')
         audio_sr, audio = wavfile.read(filename)
         #target_SR = 16000
-    elif dataset_name == 'SingleWordProductionDutch':  # not my data
+    elif dataset_name == 'SingleWordProductionDutch':
         if computer == 'mac':
             path_bids = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch'
             path_output = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch/features'
@@ -246,13 +250,10 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         filename = data_dir_Huashan + sub + '/processed/' + str(exp) + '_clip' + str(clip) + '.wav'
         print('Loading ' + filename + '.')
         audio_sr, audio = wavfile.read(filename)  # (4591216,)
-        #target_SR = 22050  # 44100-->22050
-        # audio = np.clip(audio / np.max(np.abs(audio)), -1, 1)
-    # if use_the_official_tactron_with_waveglow:
-    #     target_SR = 22050
-    #     frameshift = 256 / target_SR
-    #     winL = 1024 / target_SR
+
     # Extract HG features and average the window
+    #frameshift = 256 / target_SR
+    #winL = 1024 / target_SR
     feat = extractHG(eeg, eeg_sr, windowLength=winL, frameshift=frameshift)  # (307523, 127)-->(30026, 127)
     # TODO: channel selection based on the correlation coefficient
 
@@ -268,11 +269,9 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
     # Process Audio
     import copy,resampy
     original_audio=copy.deepcopy(audio)
-    audio=resampy.resample(audio, audio_sr, target_SR) # 48000 to 22050
+    if audio_sr != target_SR:
+        audio=resampy.resample(audio, audio_sr, target_SR) # 48000 to 22050
     #audio = scipy.signal.decimate(audio, int(audio_sr / target_SR))  # (4805019,)
-    audio_sr = target_SR
-    if not use_the_official_tactron_with_waveglow:
-        scaled = np.int16(audio / np.max(np.abs(audio)) * 32767)  # 32767??
     # os.makedirs(os.path.join(path_output), exist_ok=True)
     # scipy.io.wavfile.write(os.path.join(path_output,f'{participant}_orig_audio.wav'),audio_sr,scaled)
 
@@ -280,19 +279,11 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
     if use_the_official_tactron_with_waveglow:
         import torch
         from speech_Ruijin.utils import TacotronSTFT
-        mel_bins = 23  # hop:160, win:800
+        mel_transformer = TacotronSTFT(filter_length=int(winL*target_SR), hop_length=int(frameshift*target_SR),win_length=int(winL*target_SR),
+                                       n_mel_channels=melbins, sampling_rate=target_SR, mel_fmin=0.0,mel_fmax=8000)
 
-        if use_the_official_tactron_with_waveglow:
-            mel_transformer = TacotronSTFT(filter_length=1024, hop_length=256,
-                                           win_length=1024,
-                                           n_mel_channels=80, sampling_rate=22050, mel_fmin=0.0,
-                                           mel_fmax=8000)
-
-        else:
-            mel_transformer = TacotronSTFT(filter_length=1024, hop_length=int(frameshift * target_SR),
-                                           win_length=int(winL * target_SR),
-                                           n_mel_channels=mel_bins, sampling_rate=target_SR, mel_fmin=0.0,
-                                           mel_fmax=target_SR // 2)
+        #mel_transformer = TacotronSTFT(filter_length=1024, hop_length=int(frameshift * target_SR),win_length=int(winL * target_SR),
+        #                                   n_mel_channels=mel_bins, sampling_rate=target_SR, mel_fmin=0.0,mel_fmax=target_SR // 2)
         audio = np.clip(audio / (np.max(np.abs(audio))), -1, 1)
         # (23, 30031), mean: -8.361664; max:1.0912809; min:-11.312493
         melSpec = mel_transformer.mel_spectrogram(
@@ -302,8 +293,9 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         #melSpec = melSpec.transpose()[remove:-remove, :]  # [3:-3,:]
         melSpec = melSpec.transpose()
     else:
+        scaled = np.int16(audio / np.max(np.abs(audio)) * 32767)  # 32767??
         #  (30025, 23), mean:4.676236819560302, max: 14.057435370150962; min: 1.8680193789551505
-        melSpec = extractMelSpecs(scaled, audio_sr, melbins=melbins, windowLength=winL, frameshift=frameshift)  #
+        melSpec = extractMelSpecs(scaled, target_SR, melbins=melbins, windowLength=winL, frameshift=frameshift)  #
 
     # Align to EEG features
     melSpec = melSpec[modelOrder * stepSize:melSpec.shape[0] - modelOrder * stepSize, :]  # (29986, 23) (25867, 80)

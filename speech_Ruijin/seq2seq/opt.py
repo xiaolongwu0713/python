@@ -2,10 +2,12 @@ opt_SingleWordProductionDutch={
 'norm_mel':False,
 'norm_EEG':True,
 'mel_bins':23,
-'target_SR':22050,
 'use_the_official_tactron_with_waveglow':True,
-'winL':0.05, # feature extraction
-'frameshift':0.01, # feature extraction
+## feature extraction
+'target_SR':22050,
+'winL':0.05,
+'frameshift':0.01,
+## sliding
 'win':0.1,
 'history':0.1,
 'stride':1,
