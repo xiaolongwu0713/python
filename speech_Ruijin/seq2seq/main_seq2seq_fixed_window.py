@@ -290,7 +290,8 @@ for epoch in tqdm(range(epoch_num)):
                 #src,tgt=src.permute(1,0,2),tgt.permute(1,0,2) # ECoG_seq2seq
                 out_len=tgt.shape[0]
                 # no teacher force during validation
-                output,_, attention_weights = net.predict_step(src, tgt[1:,:,:],out_len) # torch.Size([1, 194, 80])
+                pred_len=tgt[1:, :, :].shape[0]
+                output,_, attention_weights = net.predict_step(src, pred_len,out_len) # torch.Size([1, 194, 80])
                 loss = loss_fun(output, tgt[1:,:,:])
                 running_loss += loss.item() * val_x.shape[0]
                 outputs.append(output)

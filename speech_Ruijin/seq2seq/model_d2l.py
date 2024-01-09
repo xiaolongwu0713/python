@@ -53,7 +53,7 @@ class Seq2SeqEncoder2(nn.Module):
             if self.ts_conv:
                 tmp=X[None,:,:,:].permute(2,0,3,1) # (batch, plan, channle, len) torch.Size([3, 1, 127, 20])
                 tmp=self.Sception(tmp) # torch.Size([3, 256, 1, 20])
-                embs=tmp.squeeze(2).permute(2,0,1) # torch.Size([20, 3, 256])
+                embs=tmp.squeeze(2).permute(2,0,1) # restore shape to time,batch,feature:([20, 3, 256])
             else:
                 embs=self.embedding_layer(X) # ([430, 3, 256])
             # embs shape: (num_steps, batch_size, embed_size)
@@ -112,7 +112,7 @@ class Seq2SeqAttentionDecoder(AttentionDecoder):
         #if self.embedding:
         #    target=self.embedding_layer(target)
         embedded_pre_outputs, outputs, self._attention_weights = [], [], [] # mark
-        inp=self.embedding_layer(torch.ones((1,enc_outputs.shape[0],self.out_features)).to(device))*SOS
+        inp=self.embedding_layer(torch.ones((1,enc_outputs.shape[0],self.out_features)).to(device))*SOS # (1,3,80)
         embedded_pre_outputs.append(inp)
         #target=torch.ones(target[0].shape)*SOS # TODO: how to choose SOS?
         # full teacher force
@@ -169,7 +169,7 @@ class EncoderDecoder(torch.nn.Module):
         output,state,weights=self.decoder(dec_state,dec_X.shape[0], dec_X)
         return output,state
 
-    def predict_step(self, input, output, num_steps, save_attention_weights=True):
+    def predict_step(self, input, output_len, num_steps=None, save_attention_weights=True):
         """Defined in :numref:`sec_seq2seq_training`"""
         #batch = [d2l.to(a, device) for a in batch]
         #src, tgt, src_valid_len, _ = batch
@@ -178,7 +178,7 @@ class EncoderDecoder(torch.nn.Module):
         enc_all_outputs = self.encoder(input)
         dec_state = self.decoder.init_state(enc_all_outputs)
         # no teacher force during decoding
-        output,state,weights=self.decoder(dec_state,output.shape[0])
+        output,state,weights=self.decoder(dec_state,output_len) # output.shape[0]
         return output,state,weights
 
         '''
@@ -221,9 +221,9 @@ def test_seq2seq_model(net,dataloader_test):
             src = test_x.float().permute(2,0,1).to(device)  # (batch,time,feature)-->#(time,batch,feature)
             tgt = test_y.float().permute(2,0,1).to(device)
             # src,tgt=src.permute(1,0,2),tgt.permute(1,0,2) # ECoG_seq2seq
-            out_len = tgt.shape[0]
+            out_len = tgt[1:, :, :].shape[0]
             # no teacher force during validation
-            output, _, attention_weights = net.predict_step(src, tgt[1:, :, :], out_len)  # torch.Size([1, 194, 80])
+            output, _, attention_weights = net.predict_step(src, out_len)  # torch.Size([1, 194, 80])
             loss = loss_fun(output, tgt[1:, :, :])
             predictions.append(output.cpu().numpy())
             truths.append(tgt[1:, :, :].cpu().numpy())
