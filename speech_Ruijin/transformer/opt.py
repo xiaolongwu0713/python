@@ -5,10 +5,14 @@ opt_SingleWordProductionDutch={
 'mel_bins':80,
 'step_size':5,
 'model_order':4,
-'target_SR':16000,
+
+'window_eeg':False,
+'target_SR':22050,
 'use_the_official_tactron_with_waveglow':True,
 'winL':0.05, # feature extraction
 'frameshift':0.01, # feature extraction
+
+
 'win':0.1, # 10 samples
 'history':0.1,
 'stride':1, # training stride

@@ -45,19 +45,15 @@ fig,ax=plt.subplots()
 audio_sr=22050
 
 ############
+window_eeg=opt['window_eeg']
+target_SR=opt['target_SR']
 sf_EEG = opt['sf_EEG']
-mel_bins = opt['mel_bins']
 stride = opt['stride']
 step_size = opt['step_size']
 model_order = opt['model_order']
 use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
-if use_the_official_tactron_with_waveglow:
-    target_SR = 22050
-    frameshift = 256 / target_SR  # 256 steps in 0.011609977324263039 s
-    winL = 1024 / target_SR
-else:
-    winL = opt['winL']
-    frameshift = opt['frameshift']
+winL = opt['winL']
+frameshift = opt['frameshift']
 #winL = opt['winL']
 #frameshift = opt['frameshift']
 win = math.ceil(opt['win'] / frameshift)  # int: steps
@@ -81,18 +77,21 @@ mel_transformer = TacotronSTFT(filter_length=1024, hop_length=256,
 
 
 x, y, audio_original = dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False, winL=winL, target_SR =target_SR,frameshift=frameshift,
-                               return_original_audio=True,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow)
+                               return_original_audio=True,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow,window_eeg=window_eeg)
 import resampy
 audio_original = resampy.resample(audio_original, 48000, 22050)
+len_audio=audio_original.shape[0]
+'''no need for below'''
+'''
 lenx = x.shape[0]
 leny = y.shape[0]
-len_audio=audio_original.shape[0]
 train_x = x[:int(lenx * 0.8), :]
 val_x = x[int(lenx * 0.8):int(lenx * 0.9), :]
 test_x = x[int(lenx * 0.9):, :]
 train_y = y[:int(leny * 0.8), :]
 val_y = y[int(leny * 0.8):int(leny * 0.9), :]
 test_y = y[int(leny * 0.9):, :] #(3003, 80)
+'''
 audio=audio_original[int(len_audio * 0.9):]
 
 filename=result_dir+'audio_original.wav'

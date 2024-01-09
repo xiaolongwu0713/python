@@ -56,26 +56,21 @@ elif dataname=='SingleWordProductionDutch':
 
 
 ###############
-sf_EEG=opt['sf_EEG']
-#mel_bins=opt['mel_bins']
+window_eeg=opt['window_eeg']
 target_SR=opt['target_SR']
-step_size=opt['step_size']
-model_order=opt['model_order']
+use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
 winL=opt['winL']
 frameshift=opt['frameshift']
-use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
-if use_the_official_tactron_with_waveglow:
-    target_SR = 22050
-    frameshift = 256 / target_SR # 256 steps in 0.011609977324263039 s
-    winL = 1024 / target_SR
+sf_EEG=opt['sf_EEG']
+stride=opt['stride']
+step_size=opt['step_size']
+model_order=opt['model_order']
 win = math.ceil(opt['win']/frameshift) # int: in steps
 history=math.ceil(opt['history']/frameshift) #int(opt['history']*sf_EEG) # int: in steps
-stride=opt['stride']
 baseline_method=opt['baseline_method']
 lr=opt_transformer['lr']
 norm_EEG=opt['norm_EEG']#True
 norm_mel=opt['norm_mel'] #False
-
 ##################
 
 if testing:
@@ -122,10 +117,10 @@ if dataname=='mydata':
         y=y1
 elif dataname=='SingleWordProductionDutch':
     #x, y = get_data(dataname=dataname, sid=sid,continous_data=continous_data,mel_bins=mel_bins)  # x: (25863,127), y:(25863, 80)
-    x,y=dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False, modelOrder=model_order,
-                stepSize=step_size,winL=winL, target_SR =target_SR,frameshift=frameshift,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow)
+    x,y=dataset(dataset_name=dataname, sid=sid, melbins=mel_bins, stacking=False, modelOrder=model_order,stepSize=step_size,winL=winL, target_SR =target_SR,
+                frameshift=frameshift,use_the_official_tactron_with_waveglow=use_the_official_tactron_with_waveglow,window_eeg=window_eeg)
 print('Finish reading data.')
-xy_ratio = y.shape[0] / x.shape[0]
+xy_ratio = x.shape[0]/y.shape[0]
 print('x,y ratio: '+str(xy_ratio)+'.')
 
 if norm_mel:
@@ -169,7 +164,7 @@ if use_pca:
     test_x = np.dot(test_x, pca.components_[:numComps,:].T)
 
 # history before and after the current window
-win_x, win_y, shift_x, shift_y = win+history, win* xy_ratio, stride, stride * xy_ratio
+win_x, win_y, shift_x, shift_y =  (win+history)*xy_ratio, win,stride*xy_ratio,stride
 x_train,y_train=fold_2d23d(train_x.transpose(),train_y[history:,:].transpose(), win_x, win_y, shift_x,shift_y)
 x_val,y_val=fold_2d23d(val_x.transpose(),val_y[history:,:].transpose(), win_x, win_y, shift_x,shift_y)
 x_train,y_train,x_val,y_val=[x.transpose(0,2,1) for x in (x_train,y_train,x_val,y_val)]

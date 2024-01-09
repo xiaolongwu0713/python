@@ -22,17 +22,19 @@ def fold_2d23d(x,y,wind_x,wind_y,stride_x,stride_y,):
     tmp2 = []
 
     for i in range(windows):
-        tmp1.append(x[:,int(i*stride_x):int(i*stride_x+wind_x)])
-        tmp2.append(y[:,int(i*stride_y):int(i*stride_y+wind_y)])
+        tmp1.append(x[:,round(i*stride_x):round(i*stride_x+wind_x)])
+        tmp2.append(y[:,round(i*stride_y):round(i*stride_y+wind_y)])
         #tmp1.append(x[:, i * wind_x:(i + 1) * wind_x])
         #tmp2.append(y[:, i * wind_y:(i + 1) * wind_y])
     if extra:
-        tmp1.append(x[:, -int(wind_x):])
-        tmp2.append(y[:, -int(wind_y):])
-    # in case length is not the same
+        tmp1.append(x[:, -round(wind_x):])
+        tmp2.append(y[:, -round(wind_y):])
+    # There WILL be different length because of the rounding
+    shortest = min(i.shape[1] for i in tmp1)
+    tmp11 = [j[:, :shortest] for j in tmp1]
     shortest=min([i.shape[1] for i in tmp2])
     tmp22=[j[:,:shortest] for j in tmp2]
-    return (np.asarray(tmp1),np.asarray(tmp22))
+    return (np.asarray(tmp11),np.asarray(tmp22))
 
 
 

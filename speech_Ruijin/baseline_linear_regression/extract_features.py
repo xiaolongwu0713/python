@@ -19,7 +19,7 @@ from speech_Ruijin.config import extra_EEG_extracting
 hilbert3 = lambda x: scipy.signal.hilbert(x, scipy.fftpack.next_fast_len(len(x)), axis=0)[:len(x)]
 
 
-def extractHG(data, sr, windowLength=0.05, frameshift=0.01):
+def extractHG(data, sr, windowLength=0.05, frameshift=0.01,window_eeg=True):
     """
     Window data and extract frequency-band envelope using the hilbert transform
 
@@ -50,15 +50,18 @@ def extractHG(data, sr, windowLength=0.05, frameshift=0.01):
     sos = scipy.signal.iirfilter(4, [148 / (sr / 2), 152 / (sr / 2)], btype='bandstop', output='sos')
     data = scipy.signal.sosfiltfilt(sos, data, axis=0)
     # Create feature space
-    data = np.abs(hilbert3(data))
-    # Number of windows
-    numWindows = int(np.floor((data.shape[0] - windowLength * sr) / (frameshift * sr)))  # 30025
-    feat = np.zeros((numWindows, data.shape[1]))  # (30025, 127)
-    for win in range(numWindows):
-        start = int(np.floor((win * frameshift) * sr))
-        stop = int(np.floor(start + windowLength * sr))
-        feat[win, :] = np.mean(data[start:stop, :], axis=0)
-    return feat
+    data = np.abs(hilbert3(data)) # (307523, 127)
+    if window_eeg:
+        # Number of windows
+        numWindows = int(np.floor((data.shape[0] - windowLength * sr) / (frameshift * sr)))  # 30025
+        feat = np.zeros((numWindows, data.shape[1]))  # (30025, 127)
+        for win in range(numWindows):
+            start = int(np.floor((win * frameshift) * sr))
+            stop = int(np.floor(start + windowLength * sr))
+            feat[win, :] = np.mean(data[start:stop, :], axis=0) # (25863, 127)
+        return feat
+    else:
+        return data
 
 
 def stackFeatures(features, modelOrder=4, stepSize=5):
@@ -177,8 +180,8 @@ def nameVector(elecs, modelOrder=4):
 winL and frameshift are in time, rather than sequence length. 
 winL and frameshift are the same for EEG and audio data, so that the final features of EEG and audio have the same length.
 '''
-def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,
-            stepSize=5,winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False):
+def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,stepSize=5,
+            winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False,window_eeg=True):
 
     if dataset_name == 'mydata':
         from scipy.io import wavfile
@@ -254,7 +257,7 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
     # Extract HG features and average the window
     #frameshift = 256 / target_SR
     #winL = 1024 / target_SR
-    feat = extractHG(eeg, eeg_sr, windowLength=winL, frameshift=frameshift)  # (307523, 127)-->(30026, 127)
+    feat = extractHG(eeg, eeg_sr, windowLength=winL, frameshift=frameshift,window_eeg=window_eeg)  # (307523, 127)-->(30026, 127)
     # TODO: channel selection based on the correlation coefficient
 
     # Stack features
@@ -298,15 +301,17 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         melSpec = extractMelSpecs(scaled, target_SR, melbins=melbins, windowLength=winL, frameshift=frameshift)  #
 
     # Align to EEG features
-    melSpec = melSpec[modelOrder * stepSize:melSpec.shape[0] - modelOrder * stepSize, :]  # (29986, 23) (25867, 80)
+    if stacking:
+        melSpec = melSpec[modelOrder * stepSize:melSpec.shape[0] - modelOrder * stepSize, :]  # (29986, 23) (25867, 80)
     # adjust length (differences might occur due to rounding in the number of windows)
-    if melSpec.shape[0] != feat.shape[0]:
-        print('EEG and mel difference:' + str(melSpec.shape[0] - feat.shape[0]) + '.')
-        tLen = np.min([melSpec.shape[0], feat.shape[0]])
-        melSpec = melSpec[:tLen, :] # (25863, 80)
-        feat = feat[:tLen, :] # (25863, 127)
-    else:
-        print('EEG and mel lengths are the same. ')
+    if window_eeg:
+        if melSpec.shape[0] != feat.shape[0]:
+            print('EEG and mel difference:' + str(melSpec.shape[0] - feat.shape[0]) + '.')
+            tLen = np.min([melSpec.shape[0], feat.shape[0]])
+            melSpec = melSpec[:tLen, :] # (25863, 80)
+            feat = feat[:tLen, :] # (25863, 127)
+        else:
+            print('EEG and mel lengths are the same. ')
     if return_original_audio:
         return feat, melSpec,original_audio
     else:

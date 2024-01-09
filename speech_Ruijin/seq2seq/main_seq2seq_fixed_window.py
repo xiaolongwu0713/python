@@ -148,7 +148,7 @@ elif dataname=='SingleWordProductionDutch': # SingleWordProductionDutch
         test_x = (test_x - mu) / std
     win_x, win_y, shift_x, shift_y =  (win+history)*xy_ratio, win,stride*xy_ratio,stride
     #win_x, win_y, shift_x, shift_y = win + history, win * xy_ratio, stride, stride * xy_ratio # 18,9,1,1
-    x_train, y_train = fold_2d23d(train_x.transpose(), train_y[history:, :].transpose(), win_x, win_y, shift_x,shift_y) # (20672, 127, 18)
+    x_train, y_train = fold_2d23d(train_x.transpose(), train_y[history:, :].transpose(), win_x, win_y, shift_x,shift_y) # (24006, 127, 204)/(24006, 80, 10)
     x_val, y_val = fold_2d23d(val_x.transpose(), val_y[history:, :].transpose(), win_x, win_y, shift_x, shift_y) # (2568, 127, 18)
     stride_test = stride # 1
     # stride could be different from train/val stride
