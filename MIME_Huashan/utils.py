@@ -5,51 +5,27 @@ import numpy as np
 import mne
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
 
-def read_data(sub_name='HHFU016',study='ME',scaler='std'):
-    sf=1000
-    filename = data_dir + 'preprocess/' + sub_name + '/raw_eeg_processed.fif'
-    print('Load '+filename+'.')
-    raw = mne.io.read_raw_fif(filename,preload=True)
-    filename = data_dir + 'preprocess/' + sub_name + '/events.eve'
-    events = mne.read_events(filename)
-
-    data=raw.get_data()
-    data=data.transpose()
-    if scaler=='std':
-        print("Standard scaler.")
-        scaler = StandardScaler()
-        data = scaler.fit_transform((data))
-    elif scaler=='minmax':
-        print("Minmax scaler.")
-        scaler = MinMaxScaler(feature_range=(0,1))
-        dataa = scaler.fit_transform((data))
-    else:
-        print('No scaler.')
-
-    chn_names = ["seeg"] * data.shape[1]
-    chn_types = ["seeg"] * data.shape[1]
-    info = mne.create_info(ch_names=list(chn_names), ch_types=list(chn_types), sfreq=sf)
-    raw = mne.io.RawArray(data.transpose(), info)
-
-    # marker+marker_length(0.1)+rest_duration(3)+cue_duration(2)+fix_delay(1) # +task_duraion(4)=10.1s
-    # 6.1-10.1
-    if sub_name=='HHFU016':
-        epochs = mne.Epochs(raw, events, tmin=6.5, tmax=10.5, baseline=None)
-    else:
-        epochs = mne.Epochs(raw, events, tmin=0, tmax=4, baseline=None)
-
-    if study=='MI':
-        epoch1 = epochs['1'].get_data()
-        epoch2 = epochs['3'].get_data()
-        epoch3 = epochs['5'].get_data()
-        epoch4 = epochs['7'].get_data()
-    elif study=='ME':
-        epoch1 = epochs['2'].get_data()
-        epoch2 = epochs['4'].get_data()
-        epoch3 = epochs['6'].get_data()
-        epoch4 = epochs['8'].get_data()
-    list_of_epochs = [epoch1, epoch2, epoch3, epoch4]
-    total_len = list_of_epochs[0].shape[2]
+def read_data(sub_name='HHFU016',study='ME'):
+    if study=='MI': # 1,3,5,7
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch1.fif'
+        epoch1=mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch3.fif'
+        epoch3 = mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch5.fif'
+        epoch5 = mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch7.fif'
+        epoch7 = mne.read_epochs(filename, preload=False)
+        list_of_epochs = [epoch1.get_data(), epoch3.get_data(), epoch5.get_data(), epoch7.get_data()]
+    elif study=='ME': # 2,4,6,8
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch2.fif'
+        epoch2 = mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch4.fif'
+        epoch4 = mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch6.fif'
+        epoch6 = mne.read_epochs(filename, preload=False)
+        filename = data_dir + 'preprocess/' + sub_name + '/epoch8.fif'
+        epoch8 = mne.read_epochs(filename, preload=False)
+        list_of_epochs = [epoch2.get_data(), epoch4.get_data(), epoch6.get_data(), epoch8.get_data()]
 
     # validate=test=2 trials
     class_number=4
@@ -69,4 +45,4 @@ def read_data(sub_name='HHFU016',study='ME',scaler='std'):
     val_epochs = [epochi[val_trials[clas], :, :] for clas, epochi in enumerate(list_of_epochs)]
     train_epochs = [epochi[train_trials[clas], :, :] for clas, epochi in enumerate(list_of_epochs)]
 
-    return test_epochs, val_epochs, train_epochs, scaler
+    return test_epochs, val_epochs, train_epochs

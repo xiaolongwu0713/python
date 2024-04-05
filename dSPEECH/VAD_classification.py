@@ -1,3 +1,8 @@
+'''
+This script is to discriminate between speak/listen/imagine;
+'''
+
+
 import mne
 import numpy as np
 from librosa import load
@@ -10,7 +15,7 @@ from gesture.utils import windowed_data
 
 #device=torch.device('cpu')
 modality='SEEG'
-sid=2
+sid=1 # 1/2
 sf=1024
 result_dir = data_dir + 'processed/'+modality+str(sid)+'/VAD/'
 ## load epochs and sentences
@@ -57,14 +62,14 @@ test_lists=[test_listen,test_speak,test_image]
 val_lists=[val_listen,val_speak,val_image]
 train_lists=[train_listen,train_speak,train_image]
 wind=200
-stride=50
+stride=70
 X_train,y_train,X_val,y_val,X_test,y_test=windowed_data(train_lists,val_lists,test_lists,wind,stride)
 
 train_set=myDataset(X_train,y_train)
 val_set=myDataset(X_val,y_val)
 test_set=myDataset(X_test,y_test)
 
-batch_size = 32 # larger batch_size slows the training
+batch_size = 20 # larger batch_size slows the training
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 val_loader = DataLoader(dataset=val_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True, pin_memory=False)
@@ -198,6 +203,11 @@ with torch.no_grad():
 test_acc = (running_corrects.double() / test_size).item()
 print("Test accuracy: {:.2f}.".format(test_acc))
 
+filename=result_dir +  model_name + '_'+ str(wind)+'_'+str(stride) + '_test_acc.txt'
+with open(filename,'w') as f:
+    f.write("Test accuracy: {:.2f}.".format(test_acc))
+    f.write('\n')
+
 train_result={}
 train_result['train_losses']=train_losses
 train_result['train_accs']=train_accs
@@ -208,7 +218,7 @@ filename=result_dir +  model_name + '_'+ str(wind)+'_'+str(stride) + '.npy'
 np.save(filename,train_result)
 
 #load
-#train_result = np.load(filename+'.npy',allow_pickle='TRUE').item()
+#train_result = np.load(filename,allow_pickle='TRUE').item()
 #print(read_dictionary['train_losses'])
 
 

@@ -1,29 +1,44 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from speech_Ruijin.config import data_dir
-
+from common_plot import color_codes as colors
 result_dir=data_dir+'result/'
 
 
 ## compare the decoding result in MSE and correlation coefficient (LR, seq2seq, transformer)
 # 23 mel bins
 LR_cc=[0.501,0.628,0.834,0.779,0.532,0.859,0.686,0.709,0.651,0.684]
+LR_cc_err=[0.051,0.042,0.103,0.104,0.095,0.062,0.109,0.111,0.081,0.068]
 LR_mse=[2.075,2.657,1.808,1.909,3.697,1.078,2.741,2.163,2.225,1.059]
+LR_mse_err=[0.121,0.222,0.123,0.104,0.155,0.112,0.109,0.111,0.141,0.108]
 seq2seq_cc=[0.497,0.593,0.838,0.773,0.533,0.907,0.751,0.577,0.658,0.639]
+seq2seq_cc_err=[0.101,0.092,0.103,0.084,0.088,0.101,0.109,0.056,0.077,0.108]
 seq2seq_mse=[0.133,0.143,0.073,0.076,0.183,0.029,0.094,0.132,0.078,0.045]
+seq2seq_mse_err=[0.021,0.022,0.023,0.023,0.085,0.052,0.019,0.011,0.044,0.032]
 transformer_cc=[0.579,0.649,0.821,0.717,0.515,0.870,0.805,0.682,0.550,0.693]
+transformer_cc_err=[0.021,0.034,0.023,0.056,0.077,0.063,0.043,0.025,0.054,0.063]
 transformer_mse=[0.112,0.220,0.089,0.103,0.193,0.044,0.083,0.163,0.140,0.068]
+transformer_mse_err=[0.061,0.032,0.023,0.084,0.065,0.072,0.059,0.041,0.064,0.066]
 
 fig,ax=plt.subplots()
 ax.clear()
-ax.plot(LR_cc, linestyle="-.")
-ax.plot(seq2seq_cc, linestyle="-.")
-ax.plot(transformer_cc, linestyle="-.")
-ax.plot(LR_mse, linestyle="-")
-ax.plot(seq2seq_mse, linestyle="-")
-ax.plot(transformer_mse, linestyle="-")
+sids=np.arange(1,11)
+ax.plot(sids, LR_cc, linestyle="-.", color=colors[0])
+ax.plot(sids, seq2seq_cc, linestyle="-.", color=colors[1])
+ax.plot(sids, transformer_cc, linestyle="-.", color=colors[2])
+ax.plot(sids,LR_mse, linestyle="-", color=colors[3])
+ax.plot(sids,seq2seq_mse, linestyle="-", color=colors[4])
+ax.plot(sids, transformer_mse, linestyle="-", color=colors[6])
+ax.legend(['LR','RNN','Transformmer','LR','RNN','transformer'])
 
-filename=result_dir+'compare_cc_mse.pdf'
+ax.fill_between(sids, [LR_cc[i-1]-LR_cc_err[i-1] for i in sids], [LR_cc[i-1]+LR_cc_err[i-1] for i in sids], alpha=0.5,color=colors[0])
+ax.fill_between(sids, [seq2seq_cc[i-1]-seq2seq_cc_err[i-1] for i in sids], [seq2seq_cc[i-1]+seq2seq_cc_err[i-1] for i in sids], alpha=0.5, color=colors[1])
+ax.fill_between(sids, [transformer_cc[i-1]-transformer_cc_err[i-1] for i in sids], [transformer_cc[i-1]+transformer_cc_err[i-1] for i in sids], alpha=0.5, color=colors[2])
+ax.fill_between(sids, [LR_mse[i-1]-LR_mse_err[i-1] for i in sids], [LR_mse[i-1]+LR_mse_err[i-1] for i in sids], alpha=0.5, color=colors[3])
+ax.fill_between(sids, [seq2seq_mse[i-1]-seq2seq_mse_err[i-1] for i in sids], [seq2seq_mse[i-1]+seq2seq_mse_err[i-1] for i in sids], alpha=0.5, color=colors[4])
+ax.fill_between(sids, [transformer_mse[i-1]-transformer_mse_err[i-1] for i in sids], [transformer_mse[i-1]+transformer_mse_err[i-1] for i in sids], alpha=0.5, color=colors[6])
+
+filename=result_dir+'compare_cc_mse_filled.pdf'
 fig.savefig(filename)
 
 

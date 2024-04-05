@@ -1,56 +1,60 @@
 import sys
 import socket
-
-from gesture.utils import windowed_data
-
 if socket.gethostname() == 'workstation':
     sys.path.extend(['C:/Users/wuxiaolong/mydrive/python'])
 elif socket.gethostname() == 'LongsMac':
     sys.path.extend(['/Users/long/My Drive/python'])
-elif socket.gethostname() == 'DESKTOP-NP9A9VI':
-    sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
+elif socket.gethostname() == 'Long': # 'Yoga'
+    sys.path.extend(['C:/Users/xiaowu/mydrive/python/'])
 
 import matplotlib
 matplotlib.use('TkAgg')
-from datetime import datetime
+from gesture.utils import windowed_data
 import pytz
 from tensorboardX import SummaryWriter
 from torch.optim import lr_scheduler
 from braindecode.models import ShallowFBCSPNet,EEGNetv4,Deep4Net
-
 from gesture.models.deepmodel import deepnet,deepnet_seq,deepnet_rnn, deepnet_da,deepnet_changeDepth,deepnet_expandPlan
 from gesture.models.d2l_resnet import d2lresnet
 from gesture.models.deepmodel import TSception2
 from MIME_Huashan.config import *
 from MIME_Huashan.utils import read_data
-seed = 20200220  # random seed to make results reproducible
-set_random_seeds(seed=seed)
+from pre_all import set_random_seeds
+set_random_seeds(99999)
 cuda = torch.cuda.is_available()  # check if GPU is available, if True chooses to use it
 if cuda:
     torch.backends.cudnn.benchmark = True
 
-testing=False
-sids=['HHFU016','017']
-sid=sids[0]
-task='ME' # 'ME'/'MI'
+if running_from_CMD:
+    sid = int(float(sys.argv[1]))
+    task = sys.argv[2]
+    time_stamp=sys.argv[3]
+    testing=False
+else:
+    sid=1
+    task='MI'
+    time_stamp='testing_time'
+    testing=True
+testing=(testing or debugging or computer=='mac')
+
+sub_names=['1_HHFU016_0714','2_017_0725','3_0815_Ma_JinLiang_0815','4_HHFU22_0902','5_HHFU026_1102','6_HHFU027_motorimagery']
+sub_name=sub_names[sid-1]
 fs=1000
 wind = 500
 stride = 100
-batch_size = 64
 gen_epochs=200
 class_number=4
 #Session_num,UseChn,EmgChn,TrigChn = get_channel_setting(sid)
 #fs=[Frequencies[i,1] for i in range(Frequencies.shape[0]) if Frequencies[i,0] == sid][0]
 
 the_time=datetime.now(pytz.timezone('Asia/Shanghai'))
-result_path = result_dir + 'deepLearning/' + str(wind)+'_'+str(stride)+'/'+sid + '/'+ the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')+'/'
+result_path = result_dir + 'deepLearning/' + str(wind)+'_'+str(stride)+'/'+str(sid) + '/'+ time_stamp +'/' #the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')+'/'
 print('Result dir: '+ result_path+'.')
 if not os.path.exists(result_path):
     os.makedirs(result_path)
 writer = SummaryWriter(result_path)
 
-scaler='std' # 'std'/None
-test_epochs, val_epochs, train_epochs, scaler=read_data(sub_name=sid,study=task,scaler=scaler) # sutdy='ME'/'MI'
+test_epochs, val_epochs, train_epochs=read_data(sub_name=sub_name,study=task) # sutdy='ME'/'MI'
 
 # X_train.shape: (1520, 208, 500); y_train.shape: (1520, 1);
 print("Windowing trial data into small chuncks....")
@@ -87,7 +91,7 @@ train_set=myDataset(X_train,y_train)
 val_set=myDataset(X_val,y_val)
 test_set=myDataset(X_test,y_test)
 
-
+batch_size = 32
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 val_loader = DataLoader(dataset=val_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True, pin_memory=False)
@@ -126,7 +130,7 @@ elif model_name=='deepnet_da':
 lr = 0.01
 weight_decay = 1e-10
 epoch_num = 500
-patients=20
+patients=10
 
 img_size=[n_chans,wind]
 #net = timm.create_model('visformer_tiny',num_classes=n_classes,in_chans=1,img_size=img_size)
@@ -269,3 +273,9 @@ np.save(filename,train_result)
 #train_result = np.load(filename+'.npy',allow_pickle='TRUE').item()
 #print(read_dictionary['train_losses'])
 
+filename=result_path +  model_name + '_'+ str(wind)+'_'+str(stride) + '.txt'
+with open(filename,'w') as f:
+    f.write('Best epoch:' +str(best_epoch)+'.')
+    f.write('\n')
+    f.write("Test accuracy: {:.2f}.".format(test_acc))
+    f.write('\n')

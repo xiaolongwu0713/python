@@ -19,6 +19,8 @@ elif socket.gethostname() == 'LongsMac':
     sys.path.extend(['/Users/long/My Drive/python'])
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
+elif socket.gethostname() == 'Long': # Yoga
+    sys.path.extend(['D:/mydrive/python/'])
 
 from gesture.channel_selection.utils import get_selected_channel_gumbel
 from gesture.config import *
@@ -35,7 +37,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 from torch.optim import lr_scheduler
 from gesture.models.deepmodel import deepnet,deepnet_resnet
-from example.gumbelSelection.ChannelSelection.models import MSFBCNN
+#from example.gumbelSelection.ChannelSelection.models import MSFBCNN
 from gesture.models.selectionModels_gumble import selectionNet
 
 from gesture.myskorch import on_epoch_begin_callback, on_batch_end_callback

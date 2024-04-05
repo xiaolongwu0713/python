@@ -175,7 +175,7 @@ win_x, win_y, shift_x, shift_y = win+history, win* xy_ratio, stride_test, stride
 x_test,y_test=fold_2d23d(test_x.transpose(),test_y[history:,:].transpose(), win_x, win_y, shift_x,shift_y)
 x_test,y_test=x_test.transpose(0,2,1),y_test.transpose(0,2,1)
 
-# Get input_d, output_d, timesteps from the initial dataset
+# Get input_d (channel number), output_d (mel bins), timesteps from the initial dataset
 input_d, output_d = x_train.shape[2], y_train.shape[2]
 input_len=x_train.shape[1]
 out_len = y_val.shape[1]

@@ -13,38 +13,58 @@ plott=False
 
 sf=1024
 type='SEEG' #'SEEG/ECoG
-sid=2 # SEEG 1/2
-# get the channel names from the recon.ppt file
-channel_names=['TP','Am','HA','HP','BT1','BT2','OF','FO','ST1','PO','ST2','ST3','SM','LHA']
+sid=1 # SEEG 1/2
+
 eeg_file=data_dir+'raw/'+type+str(sid)+'_*/EEG.edf' # SEEG1_datetime
 eeg_file=os.path.normpath(glob.glob(eeg_file)[0])
 raw = mne.io.read_raw_edf(eeg_file,preload=True)
-# set the channel types
-raw.info.get_channel_types() # All chs are type of 'eeg'
-ch_types={}
-for chi in raw.ch_names:
-    if any([tmp in chi for tmp in channel_names]):
-        ch_types[chi]='eeg'
-    else:
-        ch_types[chi] = 'misc'
-raw.set_channel_types(ch_types)
-raw.pick(['eeg'])
 
-## remove non-eeg channels + deal with possible low frequency drift and line noise
-# SEEG2 exhibit strong line noise;
-# SEEG2 identify additional bad channels: ST3-5
-if plott: raw.plot_psd(tmin=0, tmax=600,average=False)
-raw.info["bads"].append("ST3-5") #raw.info["bads"].remove("PR")
-raw.pick(picks='all',exclude='bads')
-#raw.pick(exclude='bads')
-# PSD again
-if plott: raw.plot_psd(tmin=0, tmax=600,average=False,exclude="bads")
-# line noise
-freqs = (50,100,150,200,250,300,350,400,450)
-raw.notch_filter(freqs=freqs)
-# possible low frequency drift
-cutoff=0.1
-raw.filter(l_freq=cutoff, h_freq=None)
+if sid==1:
+    # c##/DC#/TRIG/OSAT/PR/Pleth/ECG  + TB-9/HP-6/Ox-10
+    if plott: raw.plot()
+    bad_channels = raw.info['bads'] # 138
+    raw.drop_channels(bad_channels)  # 276--> 138
+    if plott: raw.plot_psd(tmin=0, tmax=600, average=False, exclude="bads")
+    # line noise
+    freqs = (50, 100, 150, 200, 250, 300, 350, 400, 450)
+    raw.notch_filter(freqs=freqs)
+    # possible low frequency drift
+    cutoff = 0.1
+    raw.filter(l_freq=cutoff, h_freq=None)
+
+    # notch filter can't totally eliminate line noise of these five channels
+    raw.drop_channels(['ECG1','ECG2'])
+    raw.drop_channels(['Ox-10','TB-9','HP-6'])
+
+elif sid==2:
+    # get the channel names from the recon.ppt file
+    channel_names=['TP','Am','HA','HP','BT1','BT2','OF','FO','ST1','PO','ST2','ST3','SM','LHA']
+    # set the channel types
+    raw.info.get_channel_types() # All chs are type of 'eeg'
+    ch_types={}
+    for chi in raw.ch_names:
+        if any([tmp in chi for tmp in channel_names]):
+            ch_types[chi]='eeg'
+        else:
+            ch_types[chi] = 'misc'
+    raw.set_channel_types(ch_types)
+    raw.pick(['eeg'])
+
+    ## remove non-eeg channels + deal with possible low frequency drift and line noise
+    # SEEG2 exhibit strong line noise;
+    # SEEG2 identify additional bad channels: ST3-5
+    if plott: raw.plot_psd(tmin=0, tmax=600,average=False)
+    raw.info["bads"].append("ST3-5") #raw.info["bads"].remove("PR")
+    raw.pick(picks='all',exclude='bads')
+    #raw.pick(exclude='bads')
+    # PSD again
+    if plott: raw.plot_psd(tmin=0, tmax=600,average=False,exclude="bads")
+    # line noise
+    freqs = (50,100,150,200,250,300,350,400,450)
+    raw.notch_filter(freqs=freqs)
+    # possible low frequency drift
+    cutoff=0.1
+    raw.filter(l_freq=cutoff, h_freq=None)
 
 ## working with triggers
 plot_scale=100e-5
@@ -138,7 +158,7 @@ seg_anno=keep_annotation(seg_anno, ['program_start','program_end'])
 # get start time from 'program_start' trigger
 tmin=seg_anno[0]['onset']-5 # extra 5 seconds
 tmax=seg_anno[1]['onset']+seg_anno[1]['duration']+5 # extra 5 seconds
-raw2=raw1.crop(tmin=tmin,tmax=tmax)
+raw2=raw1.copy().crop(tmin=tmin,tmax=tmax)
 #raw2=raw1.crop_by_annotations(seg_anno) # this will only return data within each annotation period
 if plott: raw2.plot(duration=100,time_format='float',n_channels=plot_channels,scalings=dict(eeg=50e-5)) # 'float'/'clock'
 
@@ -151,7 +171,7 @@ ann_comb2=anno_tmp+replace_anno
 raw2.set_annotations(ann_comb2)
 
 ## deal with the missing natus triggers
-n_natus=[tmp for tmp in raw2.annotations if tmp['description']=='TRIG[001]:1' ]
+n_natus=[tmp for tmp in ra1w2.annotations if tmp['description']=='TRIG[001]:1' ]
 n_matlab=[tmp for tmp in raw2.annotations if tmp['description']=='TRIG-matlab' ]
 diff=len(n_matlab)-len(n_natus) # 4 triggers missing in n_natus
 # visual check the missing natus triggers
@@ -194,7 +214,8 @@ raw2.set_annotations(ann_comb2_added)
 #check result: contains annotations of 'program_start'+'keyboard_wait'+'TRIG[001]:1'+'TRIG[001]:1:inserted'+'pause'+'resume'+'program_end'
 
 
-## delete trials right before 'pause' in annotation mode: select the annotation and right-click
+## delete trials right before 'pause' in annotation mode: press 'a' and enter the annotation mode, check the TRIG-matlab
+# annotation and select the annotation line, then right-click; do the same for 'TRIG[001]:1'/'TRIG[001]:1:inserted'
 if plott:
     raw2.plot(duration=100,time_format='float',n_channels=plot_channels,scalings=dict(eeg=50e-5)) # 'float'/'clock'
 else:

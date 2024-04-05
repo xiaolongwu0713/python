@@ -1,8 +1,16 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-tab_colors_names=list(mcolors.TABLEAU_COLORS.keys())
-tab_colors_codes=list(mcolors.TABLEAU_COLORS.values())
+# pre-defined colors
+#colors=['orangered','skyblue','orange','springgreen','aquamarine','darkgoldrod','royalblue']
+
+# default colors sequence
+#import matplotlib.pyplot as plt
+#prop_cycle = plt.rcParams['axes.prop_cycle']
+#colors = prop_cycle.by_key()['color']
+# or get the default color sequence below:
+color_names=list(mcolors.TABLEAU_COLORS.keys())
+color_codes=list(mcolors.TABLEAU_COLORS.values())
 
 def barplot_annotate_brackets(layer,num1, num2, data, center, height, yerr=None, dh=.05, barh=.02, fs=None, maxasterix=None):
     """

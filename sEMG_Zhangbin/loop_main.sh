@@ -41,7 +41,7 @@ if [[ $target == "PD" ]]; then
 
     date +%Y%m%d%H%M%S
     echo "Test($test_sub); Validata($val_sub)."
-    # usage: ./loop_main_all.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
+    # usage: ./loop_main.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
     python main_LOO2.py $testing  $class_num $target $test_sub $val_sub
     date +%Y%m%d%H%M%S
 
@@ -57,7 +57,7 @@ elif [[ $target == "PD" ]]; then
     fi
     date +%Y%m%d%H%M%S
     echo "Test($test_sub); Validata($val_sub)."
-    # usage: ./loop_main_all.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
+    # usage: ./loop_main.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
     #test_sub='TP013'
     val_sub='TP014'
     python main_LOO2.py $testing  $class_num $target $test_sub $val_sub
@@ -76,7 +76,7 @@ elif [[ $target == "PD" ]]; then
     fi
     date +%Y%m%d%H%M%S
     echo "Test($test_sub); Validata($val_sub)."
-    # usage: ./loop_main_all.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
+    # usage: ./loop_main.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
     python main_LOO2.py $testing  $class_num $target $test_sub $val_sub
     date +%Y%m%d%H%M%S
 

@@ -1,5 +1,5 @@
 ## usage: 1: traing a particular GAN model; 2: find a proper model (epoch) from tensorboard plot;
-## 3: generate fake data in this script; 4: call ./loop_main_all.sh in decoding_dl folder
+## 3: generate fake data in this script; 4: call ./loop_main.sh in decoding_dl folder
 
 from gesture.DA.tts_cgan_main.TransCGAN_model import Generator
 #from example.tts_gan_main.GANModels import Generator

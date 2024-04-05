@@ -9,6 +9,7 @@ sys.dont_write_bytecode = True
 
 import matplotlib as mpl
 mpl.rcParams['pdf.fonttype']=42
+mpl.use('Qt5Agg') # prevent fig freezing
 
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace is None:
@@ -19,7 +20,7 @@ else:
     debugging=False
 
 import socket
-driver='mydrive' # 'OneDrive/mydrive  #
+drive='mydrive' # 'OneDrive/mydrive  #
 if socket.gethostname() == 'LongsMac': # or laptop
     #sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
     if os.path.exists('/Volumes/Samsung_T5/data/'):
@@ -27,41 +28,44 @@ if socket.gethostname() == 'LongsMac': # or laptop
     else:
         top_data_dir = '/Volumes/second/data_local/' #'/Users/long/Documents/data/'# temp data dir
     #tmp_data_dir='/Users/long/Documents/data/gesture/'
-    top_root_dir = '/Users/xiaowu/'+driver+'/python/'  # this is project root on google drive
-    top_meta_dir = '/Users/xiaowu/'+driver+'/meta/'
+    mydrive='/Users/xiaowu/'+drive+'/'
+    top_root_dir = '/Users/xiaowu/'+drive+'/python/'  # this is project root on google drive
+    top_meta_dir = '/Users/xiaowu/'+drive+'/meta/'
     tmp_dir = '/Users/xiaowu/tmp/python_log/'
     computer='mac'
 elif socket.gethostname() == 'Long': # Yoga
     # sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
     top_data_dir = 'D:/data/BaiduSyncdisk/'
+    top_root_dir = 'D:/' + drive + '/python/'
+    top_meta_dir = 'D:/' + drive + '/meta/'
     # tmp_data_dir='/Users/long/Documents/data/gesture/'
-    mydriver='C:/Users/xiaowu/' + driver
+    mydrive='D:/' + drive+'/'
     computer = 'Yoga'
     tmp_dir='D:/tmp/python_log/'
 elif socket.gethostname() == 'DESKTOP-FBDP919': # or laptop
     #sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
     top_data_dir = 'G:/data/'
     #tmp_data_dir='/Users/long/Documents/data/gesture/'
-    top_root_dir = 'C:/Users/xiaowu/' + driver + '/python/'
-    top_meta_dir = 'C:/Users/xiaowu/' + driver + '/meta/'
+    top_root_dir = 'C:/Users/xiaowu/' + drive + '/python/'
+    top_meta_dir = 'C:/Users/xiaowu/' + drive + '/meta/'
     computer='mac'
 elif socket.gethostname() == 'workstation':
     #sys.path.extend(['C:/Users/wuxiaolong/Desktop/BCI/googledrive'])
     #data_dir = 'C:/Users/wuxiaolong/Desktop/BCI/data/gesture/'  # temp data dir
     top_data_dir = 'H:/Long/data/'  # temp data dir
-    top_root_dir='C:/Users/wuxiaolong/'+driver+'/python/'
-    top_meta_dir = 'C:/Users/wuxiaolong/'+driver+'/meta/'
+    top_root_dir='C:/Users/wuxiaolong/'+drive+'/python/'
+    top_meta_dir = 'C:/Users/wuxiaolong/'+drive+'/meta/'
     tmp_dir = 'H:/Long/data/tmp_dir_python/'
     computer='workstation'
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     top_data_dir = 'H:/Long/data/'  # temp data dir
-    top_root_dir = 'C:/Users/xiaol/'+driver+'/python/'
-    top_meta_dir = 'C:/Users/xiaol/'+driver+'/meta/'
+    top_root_dir = 'C:/Users/xiaol/'+drive+'/python/'
+    top_meta_dir = 'C:/Users/xiaol/'+drive+'/meta/'
     tmp_dir='H:/Long/data/tmp_dir_python/'
 elif socket.gethostname() == 'LongsPC':
     top_data_dir = 'H:/Long/data/'  # temp data dir
-    top_root_dir = 'C:/Users/Long/'+driver+'/python/'
-    top_meta_dir = 'C:/Users/Long/'+driver+'/meta/'
+    top_root_dir = 'C:/Users/Long/'+drive+'/python/'
+    top_meta_dir = 'C:/Users/Long/'+drive+'/meta/'
 
 import os, re
 location=os.getcwd()
@@ -87,8 +91,6 @@ class Logger(object):
         self.log.flush()
 logfilename=tmp_dir+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
 sys.stdout = Logger(filename=logfilename)
-
-colors=['orangered','skyblue','orange','springgreen','aquamarine','yellow','gold']
 
 import os
 

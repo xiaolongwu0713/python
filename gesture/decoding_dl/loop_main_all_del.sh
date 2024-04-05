@@ -54,21 +54,21 @@ do
   #do
 
   network='deepnet'
-  # usage: ./loop_main_all.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
+  # usage: ./loop_main.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
 
-  # vanilla training: call: ./loop_main_all.sh # (no selection, or augmentation), and uncomment below two lines
+  # vanilla training: call: ./loop_main.sh # (no selection, or augmentation), and uncomment below two lines
   echo "Training sid: $sid using $network."
   python main_all.py $sid $network 1000 500 500
 
-  # call: ./loop_main_all.sh 'selected_channels' 'stg', and uncomment below two lines
+  # call: ./loop_main.sh 'selected_channels' 'stg', and uncomment below two lines
   #echo "Training sid: $sid using $2 selecting method. "
   #python main_all.py $sid $network 1000 500 200 $1 $2
 
   # re-train with data augmented from WGAN using 200 epochs
-  #call: ./loop_main_all.sh DA WGAN_GP 200;
+  #call: ./loop_main.sh DA WGAN_GP 200;
   #echo "Training finish for sid: $sid using data augmented by $2. "
   #python main_all.py $sid $network 1000 500 200 $1 $2 $3
-  #call: ./loop_main_all.sh DA NI
+  #call: ./loop_main.sh DA NI
   #python main_all.py $sid $network 1000 500 200 $1 $2 $3
 
   # break # test for a single user only
