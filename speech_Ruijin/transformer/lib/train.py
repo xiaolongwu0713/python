@@ -41,7 +41,7 @@ class Batch:
 def data_gen(dataloader,start_symbol = 1,encoder_only=False):
     for idx, (data_x,data_y) in enumerate(dataloader): #x:(10batch, 300time, 10channel); y:(10batch, 200time, 2channel)
         if not encoder_only:
-            #data_x[:, 0, :] = start_symbol # TODO: no need to append SOS to the source data
+            #data_x[:, 0, :] = start_symbol
             data_y[:, 0, :] = start_symbol
         src_ = data_x.float()
         tgt_ = data_y.float()

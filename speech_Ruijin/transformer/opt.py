@@ -6,11 +6,12 @@ opt_SingleWordProductionDutch={
 'step_size':5,
 'model_order':4,
 
-'window_eeg':False,
-'target_SR':22050,
+'window_eeg':True, # # use an averaging window to slide along the extracted EEG high-gamma feature
+'winL':0.05, #  size of the averaging window
+'frameshift':0.01, # stride of the averaging window
+'target_SR':16000, #22050; for winL of 0.05, winL*target_SR=800 is an integer. This will lead to simiar length between features of eeg and audio;
 'use_the_official_tactron_with_waveglow':True,
-'winL':0.05, # feature extraction
-'frameshift':0.01, # feature extraction
+
 
 
 'win':0.1, # 10 samples

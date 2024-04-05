@@ -45,7 +45,7 @@ else:
     dataname = 'SingleWordProductionDutch'
     time_stamp='testing_time'
     mel_bins=80
-    testing=True
+    testing=False
 testing=(testing or debugging or computer=='mac')
 
 if dataname=='mydata':
@@ -56,17 +56,17 @@ elif dataname=='SingleWordProductionDutch':
 
 
 ###############
-window_eeg=opt['window_eeg']
 target_SR=opt['target_SR']
 use_the_official_tactron_with_waveglow=opt['use_the_official_tactron_with_waveglow']
-winL=opt['winL']
-frameshift=opt['frameshift']
+window_eeg=opt['window_eeg'] # use an averaging window to slide along the extracted high-gamma feature
+winL=opt['winL'] # size of the averaging window
+frameshift=opt['frameshift'] # stride of the averaging window
 sf_EEG=opt['sf_EEG']
-stride=opt['stride']
 step_size=opt['step_size']
 model_order=opt['model_order']
-win = math.ceil(opt['win']/frameshift) # int: in steps
-history=math.ceil(opt['history']/frameshift) #int(opt['history']*sf_EEG) # int: in steps
+win = math.ceil(opt['win']/frameshift) # opt['win'] and frameshift are in second; win: in steps
+history=math.ceil(opt['history']/frameshift) #int(opt['history']*sf_EEG) # history: in steps
+stride=opt['stride']
 baseline_method=opt['baseline_method']
 lr=opt_transformer['lr']
 norm_EEG=opt['norm_EEG']#True
@@ -82,12 +82,7 @@ print('sid: '+str(sid)+ '; Testing mode:'+str(testing)+'; baseline_method: '+str
 the_time=datetime.now(pytz.timezone('Asia/Shanghai'))
 #result_dir=data_dir+'seq2seq_transformer/sid_'+str(sid)+'/'+ the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')+'/'
 #result_dir=data_dir+'seq2seq_transformer/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'+the_time.strftime('%Y_%m_%d') + '_' + the_time.strftime('%H_%M')
-result_dir=data_dir+'seq2seq_transformer/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'+time_stamp
-
-if testing:
-    result_dir=result_dir+'_testing/'
-else:
-    result_dir=result_dir+'/'
+result_dir=data_dir+'seq2seq_transformer/'+dataname+'/'+'mel_'+str(mel_bins)+'/sid_'+str(sid)+'/'+time_stamp+'/'
 if not os.path.exists(result_dir):
     os.makedirs(result_dir)
 print('Result dir: '+ result_dir+'.')
