@@ -296,7 +296,7 @@ for epoch in tqdm(range(total_epoch)):
     print('Validating...')
     model.eval() # test the model
 
-    if val_teacher_force:
+    if val_teacher_force: # default false
         #This is a bad validating method, because it uses teacher force like in the training step.
         with torch.no_grad():
             val_loss,pred,truth, att_encoder, att_decoder, att_enc_dec = run_epoch(epoch,batch_number,writer,data_gen(dataloader_val,encoder_only=encoder_only), model,SimpleLossCompute(model.generator, criterion, None))
