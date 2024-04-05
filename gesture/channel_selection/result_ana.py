@@ -106,7 +106,7 @@ ax.axhline(y=mean_manual, color=colors[4], linestyle='--')
 ax.axhline(y=mean_random, color=colors[5], linestyle='--')
 ax.legend(['all','gumbel','stg_10','stg_all','manual','random'],loc="lower left",bbox_to_anchor=(0.5,0.7,0.1,0.1),fontsize='small')
 
-ax.set_xticks(range(len(sids)))
+ax.set_xticks(range(len(good_sids)))
 ax.set_xticklabels(good_sids,rotation = 45, position=(0,0),fontsize='x-small')
 filename = result_dir + 'selection/compare_all_line.pdf'
 fig.savefig(filename)

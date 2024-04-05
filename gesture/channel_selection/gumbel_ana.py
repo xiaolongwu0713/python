@@ -16,8 +16,7 @@ channel_num_selected=10
 
 
 ## training process of the selection network for one subject
-selection_result = result_dir + 'selection/gumbel/' + 'P' + str(sid) + '/' + str(
-    channel_num_selected) + 'channels/'
+selection_result = result_dir + 'selection/gumbel/' + 'P' + str(sid) + '/' + str(channel_num_selected) + 'channels/'
 # result_dir='/Users/long/OneDrive/share/selection/gumbel/3/P10'
 scores_all = np.load(selection_result + 'score_all.npy', allow_pickle=True).item()  # (train acc, val acc)
 epoch_score=scores_all['epoch_score']

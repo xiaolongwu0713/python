@@ -9,7 +9,7 @@ elif socket.gethostname() == 'LongsMac':
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
 elif socket.gethostname() == 'Long': # Yoga
-    sys.path.extend(['C:/Users/xiaowu/mydrive/python/'])
+    sys.path.extend(['D:/mydrive/python/'])
 
 from speech_Ruijin.baseline_linear_regression.extract_features import dataset
 from speech_Ruijin.transformer.lib.train import *
@@ -194,43 +194,6 @@ batch_number=len(dataloader_train)
 #batch_size=1
 dataloader_test = DataLoader(dataset=dataset_test,batch_size=batch_size,shuffle=False)
 
-'''
-class LDSDataset(Dataset):
-    # use boolen value to indicate that the data is for training or testing
-    def __init__(self,x,y,train=True,ratio=0.7):
-        self.len = x.shape[0]
-        self.ratio = ratio
-        split = int(self.len*self.ratio)
-        split1 = int(self.len * 0.7)
-        split2 = int(self.len * 0.9)
-        self.x_train = torch.from_numpy(x[:split1])
-        self.y_train = torch.from_numpy(y[:split1])
-        self.x_val = torch.from_numpy(x[split1:split2])
-        self.y_val = torch.from_numpy(y[split1:split2])
-        self.x_test = torch.from_numpy(x[split2:])
-        self.y_test = torch.from_numpy(y[split2:])
-        self.train = train
-
-    def __len__(self):
-        if self.train:
-            return int(self.len*self.ratio)
-        else:
-            return int(self.len*(1-self.ratio))
-
-    def __getitem__(self, index):
-        if self.train:
-            return self.x_train[index], self.y_train[index]
-        else:
-            return self.x_test[index], self.y_test[index]
-
-# split training and testing set
-split_ratio = 0.7
-batch_size = 50
-dataset_train = LDSDataset(ts,ls,train=True,ratio=split_ratio)
-dataloader_train = DataLoader(dataset=dataset_train,batch_size=batch_size,shuffle=True)
-dataset_test = LDSDataset(ts,ls,False,split_ratio)
-dataloader_test = DataLoader(dataset=dataset_test,batch_size=batch_size,shuffle=True)
-'''
 opt_transformer['src_d'] = input_d # input dimension
 opt_transformer['tgt_d'] = output_d # output dimension
 opt_transformer['out_len'] = out_len

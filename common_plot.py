@@ -11,6 +11,7 @@ import matplotlib.colors as mcolors
 # or get the default color sequence below:
 color_names=list(mcolors.TABLEAU_COLORS.keys())
 color_codes=list(mcolors.TABLEAU_COLORS.values())
+colors=color_names # use name by default
 
 def barplot_annotate_brackets(layer,num1, num2, data, center, height, yerr=None, dh=.05, barh=.02, fs=None, maxasterix=None):
     """

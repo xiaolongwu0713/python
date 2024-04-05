@@ -7,11 +7,9 @@ import torch.nn.functional as F
 from gesture.models.deepmodel import deepnet
 from example.gumbelSelection.ChannelSelection.models import  MSFBCNN
 
-
 limit_a, limit_b, epsilon = -.1, 1.1, 1e-6
 class SelectionLayer(nn.Module):
     def __init__(self, N, M, temperature=1.0):
-
         super(SelectionLayer, self).__init__()
         self.floatTensor = torch.FloatTensor if not torch.cuda.is_available() else torch.cuda.FloatTensor
         self.N = N
@@ -23,58 +21,49 @@ class SelectionLayer(nn.Module):
         self.thresh = 10.0
         self.H=0.0
 
+    #Sampling over Gumbel distri was done using Inverse transform sampling:1,sample random y from uniform distr;
+    # 2,calcuate x from y using inverse CDF function;
+    # standard Gumbel CDF:y=exp(-exp(-x))-->inverse function:x=-ln(-ln(y));
+    # below is a concrete distribution
     def quantile_concrete(self, x):  # eq: 2
-
         g = -torch.log(-torch.log(x))  # gumbel distribution
         #g=torch.zeros(x.shape).cuda() # test no sampling: failed.
         y = (self.qz_loga + g) / self.temperature  # beta # torch.Size([208, 10]) + torch.Size([32, 208, 10])
         y = torch.softmax(y, dim=1)  # concrete distribution. torch.Size([16, 44, 3])
-
         return y
 
-    def regularization(self):
-
-        eps = 1e-10
-        z = torch.clamp(torch.softmax(self.qz_loga, dim=0), eps, 1) # torch.Size([208, 10])
-        self.H = torch.sum(F.relu(torch.norm(z, 1, dim=1) - self.thresh)) # L1 norm = sum(abs(xi))
-        #print(max(torch.norm(z, 1, dim=1)-self.thresh)) # penalize
-
-        return self.H
-
     def get_eps(self, size):
-
         eps = self.floatTensor(size).uniform_(epsilon, 1 - epsilon)
-
         return eps
 
     def sample_z(self, batch_size, training):
-
         if training:
-
             eps = self.get_eps(self.floatTensor(batch_size, self.N, self.M))
-            z = self.quantile_concrete(eps)  # eq: 2  torch.Size([16, 44, 3])
+            z = self.quantile_concrete(eps)  # eq: 2: same shape as eps;  torch.Size([16, 44, 3])
             z = z.view(z.size(0), 1, z.size(1), z.size(2))  # torch.Size([16, 1, 44, 3])
-
             return z
-
         else: # freeze or evaluating
-
             ind = torch.argmax(self.qz_loga, dim=0)
             one_hot = self.floatTensor(np.zeros((self.N, self.M)))
             for j in range(self.M):
                 one_hot[ind[j], j] = 1
             one_hot = one_hot.view(1, 1, one_hot.size(0), one_hot.size(1))
             one_hot = one_hot.expand(batch_size, 1, one_hot.size(2), one_hot.size(3))
-
             return one_hot
 
-    def forward(self, x):
+    # penalty on the duplicated selection
+    def regularization(self):
+        eps = 1e-10
+        z = torch.clamp(torch.softmax(self.qz_loga, dim=0), eps, 1)  # torch.Size([208, 10])
+        self.H = torch.sum(F.relu(torch.norm(z, 1, dim=1) - self.thresh))  # L1 norm = sum(abs(xi))
+        # print(max(torch.norm(z, 1, dim=1)-self.thresh)) # penalize
+        return self.H
 
+    def forward(self, x):
         z = self.sample_z(x.size(0), training=(self.training and not self.freeze))  # torch.Size([16, 1, 44, 3])
         z_t = torch.transpose(z, 2, 3)  # torch.Size([16, 1, 3, 44])
         out = torch.matmul(z_t, x)  # x:torch.Size([16, 1, 44, 1125])
         return out  # out: torch.Size([16, 1, 3, 1125])
-
 
 def init_weights(m):
     if (type(m) == nn.Linear or type(m) == nn.Conv2d):
@@ -115,12 +104,11 @@ class selectionNet(nn.Module):
         return out
 
     def regularizer(self, lamba, weight_decay):
-
         # Regularization of selection layer
         reg_selection = self.floatTensor([0])
         # L2-Regularization of other layers
         reg = self.floatTensor([0])
-        for i, layer in enumerate(self.layers):
+        for i, layer in enumerate(self.layers): # selection subnet(one selectionLayer) and deepconv (multiple Conv2D+linear)
             if (type(layer) == SelectionLayer):
                 reg_selection += layer.regularization()
             else:
@@ -157,7 +145,6 @@ class selectionNet(nn.Module):
         m.thresh = thresh
 
     def monitor(self):
-
         m = self.selection_layer
         eps = 1e-10
         # Probability distributions
@@ -166,7 +153,6 @@ class selectionNet(nn.Module):
         H = - torch.sum(z * torch.log(z), dim=0) / math.log(self.N)
         # Selections
         s = torch.argmax(m.qz_loga, dim=0) + 1
-
         return H, s, z
 
     def num_flat_features(self, x):

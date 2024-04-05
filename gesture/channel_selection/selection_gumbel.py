@@ -1,14 +1,3 @@
-
-
-#%cd /content/drive/MyDrive/
-# raw_data is imported from global config
-
-#%%capture
-#! pip install hdf5storage
-#! pip install mne==0.23.0
-#! pip install torch
-#! pip install Braindecode==0.5.1
-
 # necessary when running from cmdline
 import sys
 import socket
@@ -24,6 +13,7 @@ elif socket.gethostname() == 'Long': # Yoga
 
 from gesture.channel_selection.utils import get_selected_channel_gumbel
 from gesture.config import *
+import sys
 import os, re
 import matplotlib.pyplot as plt
 import hdf5storage
@@ -45,12 +35,10 @@ from gesture.preprocess.chn_settings import get_channel_setting
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 seed = 20200220  # random seed to make results reproducible
-#set_random_seeds(seed=seed)
+set_random_seeds(seed=seed)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-cuda = torch.cuda.is_available()  # check if GPU is available, if True chooses to use it
+cuda = torch.cuda.is_available()  # check if GPU is available, chooses to use it if True;
 device = 'cuda' if cuda else 'cpu'
-import inspect as i
-import sys
 
 #if 'PYTHONPATH' in os.environ and 'PyCharm' in os.environ['PYTHONPATH']:
 if os.environ.get('PYCHARM_HOSTED'):
@@ -62,7 +50,7 @@ else:
     running_from_IDE = False
     print("Running from CMD.")
 
-if socket.gethostname() == 'workstation' or socket.gethostname() == 'DESKTOP-NP9A9VI':
+if socket.gethostname() == 'workstation' or socket.gethostname() == 'DESKTOP-NP9A9VI' or socket.gethostname() == 'Long':
     if running_from_CMD: # run from cmd on workstation
         sid = int(sys.argv[1])
         try:
@@ -80,9 +68,10 @@ if socket.gethostname() == 'workstation' or socket.gethostname() == 'DESKTOP-NP9
                 channel_to_select) + '; ' + 'Repitition: ' + str(repetition) + ';'
         elif channel_to_select:
             print_this = 'CMD: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; '
-    elif running_from_IDE: # run from IDE on workstation
+    elif running_from_IDE: # run from IDE on Yoga
         sid = 10  # 4
         channel_to_select=10
+        repetition=False
         print_this = 'IDE On Workstation: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; '
 elif socket.gethostname() =='LongsMac': # only run from IDE on Mac
     print("Local debug.")
@@ -113,7 +102,7 @@ del mat
 # no effect. why?
 if 1==1:
     chn_data=data[:,-3:]
-    data=data[:,:-3]
+    data=data[:,:-3] # shape: (1052092, 209)
     scaler = StandardScaler()
     scaler.fit(data)
     data=scaler.transform((data))
@@ -145,9 +134,9 @@ epoch3=epochs['2'].get_data()
 epoch4=epochs['3'].get_data()
 epoch5=epochs['4'].get_data()
 list_of_epochs=[epoch1,epoch2,epoch3,epoch4,epoch5]
-total_len=list_of_epochs[0].shape[2]
+#total_len=list_of_epochs[0].shape[2]
 
-# validate=test=2 trials
+# randomly select 2 trials from each of five classes as the testing and validating dataset
 trial_number=[list(range(epochi.shape[0])) for epochi in list_of_epochs] #[ [0,1,2,...19],[0,1,2...19],... ]
 test_trials=[random.sample(epochi, 2) for epochi in trial_number]
 # len(test_trials[0]) # test trials number
@@ -225,7 +214,7 @@ n_epochs = 200
 one_window=next(iter(train_set))[0]
 n_chans = one_window.shape[0]
 
-img_size=[n_chans,wind]
+#img_size=[n_chans,wind]
 #net = timm.create_model('visformer_tiny',num_classes=n_classes,in_chans=1,img_size=img_size)
 #net = deepnet(n_chans,class_number,input_window_samples=wind,final_conv_length='auto',) # 81%
 net = selectionNet(n_chans,class_number,wind,channel_to_select) # 81%
@@ -264,7 +253,7 @@ criterion = torch.nn.CrossEntropyLoss()
 # Decay LR by a factor of 0.1 every 7 epochs
 lr_schedulerr = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-# decline from start_value at the begining to end_value at the end_epoch, and hold during the rest epochs
+# decrease temp from start_value at the begining to end_value at the end_epoch, and hold during the rest epochs
 def exponential_decay_schedule(start_value,end_value,epochs,end_epoch):
     t = torch.FloatTensor(torch.arange(0.0,epochs))
     p = torch.clamp(t/end_epoch,0,1)
@@ -397,9 +386,9 @@ for epoch in range(epoch_num):
     print("Traing acc: %.2f; Evaluating acc: %.2f" % (train_acc, val_acc))
 
     hi, sel, probas = net.monitor()
-    H[epoch].append(hi.detach().cpu().numpy())
-    S[epoch].append(sel.detach().cpu().numpy())
-    Z[epoch].append(probas.detach().cpu().numpy())
+    H[epoch].append(hi.detach().cpu().numpy()) # entropy, shape:(10,);
+    S[epoch].append(sel.detach().cpu().numpy()) # selected channels, shape: (10,);
+    Z[epoch].append(probas.detach().cpu().numpy()) # probs, shape: (208, 10);
     # ax.plot(probas.detach().cpu().numpy())
     # fig.savefig(result_dir + 'prob_dist' + str(epoch) + '.png')
     # ax.clear()
@@ -422,8 +411,6 @@ for epoch in range(epoch_num):
     print("Training accuracy: "+str(train_acc)+';')
     print("Evaluating accuracy: "+ str(val_acc)+';')
     if epoch == 0:
-        best_acc = val_acc
-        patient = patients
         best_acc = val_acc
         patient = patients
         state = {
@@ -460,7 +447,7 @@ score_all['test_acc']=test_acc
 filename=result_dir+'score_all.npy'
 np.save(filename, score_all)
 
-HH=np.asarray(H)
+HH=np.asarray(H) # entropy
 filename = result_dir + 'HH'
 np.save(filename,HH)
 SS=np.asarray(S) # selection 
