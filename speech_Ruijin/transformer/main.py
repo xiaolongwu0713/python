@@ -320,8 +320,8 @@ for epoch in tqdm(range(total_epoch)):
                                            device=device, encoder_only=encoder_only)
             # the first sample of pred are all 1s
             predictions.append(pred[:,1:,:])
-            truths.append(val_y[:,1:,:])
-            val_loss = criterion(pred[:,1:,:], val_y[:,1:,:]).item()
+            truths.append(val_y)
+            val_loss = criterion(pred[:,1:,:], val_y).item()
             val_losses.append(val_loss)
 
             writer.add_scalar('val_loss', val_loss, epoch * len(dataloader_val) + i)

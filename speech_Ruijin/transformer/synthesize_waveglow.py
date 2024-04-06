@@ -18,7 +18,7 @@ elif socket.gethostname() == 'LongsMac':
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
 elif socket.gethostname() == 'Long': # Yoga
-    sys.path.extend(['C:/Users/xiaowu/mydrive/python/'])
+    sys.path.extend(['D:/mydrive/python/'])
 
 from pre_all import running_from_CMD
 from speech_Ruijin.config import data_dir

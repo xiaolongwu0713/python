@@ -56,7 +56,7 @@ opt_transformer['Model-dimensions'] = 256 # 256
 opt_transformer['feedford-size'] = 256 # 512
 opt_transformer['headers'] = 4 # 8
 opt_transformer['dropout'] = 0.5
-opt_transformer['lr']=0.0005
+opt_transformer['lr']=0.0003
 opt_transformer['batch_size']=128
 
 

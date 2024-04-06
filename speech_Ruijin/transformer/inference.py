@@ -9,8 +9,7 @@ elif socket.gethostname() == 'LongsMac':
 elif socket.gethostname() == 'DESKTOP-NP9A9VI':
     sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
 elif socket.gethostname() == 'Long': # Yoga
-    sys.path.extend(['C:/Users/xiaowu/mydrive/python/'])
-
+    sys.path.extend(['D:/mydrive/python/'])
 
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
@@ -183,8 +182,8 @@ pred = np.load(filename_pred)  # (3066, 100, 40)
 tgt = np.load(filename_tgt)  # (3066, 100, 40)
 '''
 
-pred[:, 0, :] = pred[:, 1, :]
-tgt[:, 0, :] = tgt[:, 1, :]
+#pred[:, 0, :] = pred[:, 1, :]
+pred = pred[:, 1:, :]
 
 avg_tgt = averaging(tgt, win_y, shift_y)  # (30750, 40)
 avg_pred = averaging(pred, win_y, shift_y)  # (6121, 100, 40)-->(6220, 40)

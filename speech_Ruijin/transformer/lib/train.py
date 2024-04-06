@@ -41,8 +41,13 @@ class Batch:
 def data_gen(dataloader,start_symbol = 1,encoder_only=False):
     for idx, (data_x,data_y) in enumerate(dataloader): #x:(10batch, 300time, 10channel); y:(10batch, 200time, 2channel)
         if not encoder_only:
-            #data_x[:, 0, :] = start_symbol
-            data_y[:, 0, :] = start_symbol
+            starts = torch.ones(data_y.size(0), 1, data_y.size(2))
+            data_y=torch.concatenate((starts,data_y),1)
+
+            starts = torch.ones(data_x.size(0), 1, data_x.size(2))
+            data_x = torch.concatenate((starts, data_x), 1)
+
+            #data_y[:, 0, :] = start_symbol
         src_ = data_x.float()
         tgt_ = data_y.float()
         yield Batch(src_, tgt_, 0,encoder_only=encoder_only)
@@ -106,17 +111,22 @@ def output_prediction(model,ts_test,ls_test, max_len, start_symbol,output_d,devi
 
 
 # not suitable for encoder_only mode; just use the validation dataset to monitor the model performance (no teacher force in encoder_only mode)
-def output_prediction2(model, ts_test, ls_test, max_len, start_symbol, output_d, device, encoder_only=False):
+def output_prediction2(model, x, y, max_len, start_symbol, output_d, device, encoder_only=False):
     # from common_dl import device
     # we pre-process the data like in data generation
     #input_data = torch.from_numpy(ts_test).unsqueeze(0).float().to(device)
     # input_data=ts_test.float()
-    ts_test[:, 0, :] = 1
+    #x[:, 0, :] = 1
     #true_output = torch.from_numpy(ls_test).unsqueeze(0).float().to(device)
     # true_output=ls_test.float()
-    ls_test[:, 0, :] = 1
-    src = ts_test.detach()
-    tgt = ls_test.detach()
+    #y[:, 0, :] = 1
+    starts = torch.ones(x.size(0), 1, x.size(2))
+    x = torch.concatenate((starts, x), 1)
+    starts = torch.ones(y.size(0), 1, y.size(2))
+    y = torch.concatenate((starts, y), 1)
+
+    src = x.detach()
+    tgt = y.detach()
     batch_size=src.shape[0]
 
     test_batch = Batch(src, tgt, 0, device=device, encoder_only=encoder_only)
@@ -131,7 +141,7 @@ def output_prediction2(model, ts_test, ls_test, max_len, start_symbol, output_d,
         # apply a loop to generate output sequence one by one.
         # This means to generate the fourth output we feed the first three generated output
         # along with memory output from encoder to decoder.
-        for i in range(max_len - 1):
+        for i in range(max_len):
             out,att_decoder, att_enc_dec = model.decode(memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data))
             out = model.generator(out)
             # concatenate new output to the previous output sequence
@@ -139,7 +149,7 @@ def output_prediction2(model, ts_test, ls_test, max_len, start_symbol, output_d,
             del out
         outs = [out for out in ys]
         # return predicted sequence and true output sequence
-    return torch.stack(outs, 0).cpu().detach(), ls_test.cpu().detach()
+    return torch.stack(outs, 0).cpu().detach(), y.cpu().detach()
 
 
 
