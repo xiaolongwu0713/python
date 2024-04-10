@@ -114,7 +114,7 @@ def main_worker(args):
     start_epoch = 0
     best_fid = 1e4
 
-    args.path_helper = set_log_dir('H:/Long/data/gesture/DA/TTSCGAN/' + str(args.sid) + '/')
+    args.path_helper = set_log_dir('D:/data/BaiduSyncdisk/gesture/DA/cTGAN/' + str(args.sid) + '/')
     writer = SummaryWriter(args.path_helper['log_path'])
     checkpoint_dir = Path(writer.log_dir).parent.joinpath('Model')
     print('Log dir: ' + writer.log_dir + '.')
@@ -155,7 +155,6 @@ def main_worker(args):
             'path_helper': args.path_helper,
         }, checkpoint_dir, filename="checkpoint_"+str(epoch)+".pth")
         del avg_gen_net
-
 
 def gen_plot(gen_net, epoch, fig, axs, args):
     fig.suptitle('Generated data at epoch ' + str(epoch) + '.', fontsize=30)
