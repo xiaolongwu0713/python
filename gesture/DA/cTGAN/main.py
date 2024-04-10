@@ -1,8 +1,7 @@
 from gesture.DA.cTGAN.models import *
-from gesture.DA.cTGAN.ctgan import train, LinearLrDecay, load_params, copy_params, cur_stages
+from gesture.DA.cTGAN.ctgan import train, LinearLrDecay, load_params, copy_params, cur_stages, gradient_penalty
 from gesture.DA.cTGAN.utils import set_log_dir, save_checkpoint, create_logger, mydataset
-
-from pathlib import Path
+from tqdm import tqdm
 import torch
 import torch.utils.data.distributed
 from torch.utils import data
@@ -69,10 +68,6 @@ def main():
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-    # Simply call main_worker function
-    main_worker(args)
-        
-def main_worker(args):
     args.grow_steps = [0, 0]
 
     # import network
@@ -116,7 +111,7 @@ def main_worker(args):
 
     args.path_helper = set_log_dir('D:/data/BaiduSyncdisk/gesture/DA/cTGAN/' + str(args.sid) + '/')
     writer = SummaryWriter(args.path_helper['log_path'])
-    checkpoint_dir = Path(writer.log_dir).parent.joinpath('Model')
+    checkpoint_dir = args.path_helper['ckpt_path'] # Path(writer.log_dir).parent.joinpath('Model')
     print('Log dir: ' + writer.log_dir + '.')
 
     writer_dict = {
@@ -134,7 +129,105 @@ def main_worker(args):
         print("cur_stage " + str(cur_stage)) if args.rank==0 else 0
         print(f"path: {args.path_helper['prefix']}") if args.rank==0 else 0
 
-        train(args, gen_net, dis_net, gen_optimizer, dis_optimizer, gen_avg_param, train_loader, epoch, writer_dict, lr_schedulers)
+        #train(args, gen_net, dis_net, gen_optimizer, dis_optimizer, gen_avg_param, train_loader, epoch, writer_dict, lr_schedulers)
+        writer = writer_dict['writer']
+        gen_step = 0
+        cls_criterion = nn.CrossEntropyLoss()
+        lambda_cls = 1
+        lambda_gp = 10
+
+        gen_net.train()
+        dis_net.train()
+
+        for iter_idx, (real_imgs, real_img_labels) in enumerate(tqdm(train_loader)):
+            global_steps = writer_dict['train_global_steps']
+
+            # Adversarial ground truths
+            real_imgs = real_imgs.type(torch.cuda.FloatTensor).cuda()
+            #         real_img_labels = real_img_labels.type(torch.IntTensor)
+            real_img_labels = real_img_labels.type(torch.LongTensor)
+            real_img_labels = real_img_labels.cuda()
+
+            # Sample noise as generator input
+            noise = torch.cuda.FloatTensor(np.random.normal(0, 1, (real_imgs.shape[0], args.latent_dim))).cuda()
+            fake_img_labels = torch.randint(0, 5, (real_imgs.shape[0],)).cuda()
+
+            #  Train Discriminator
+
+            dis_net.zero_grad()
+            r_out_adv, r_out_cls = dis_net(real_imgs)
+            fake_imgs = gen_net(noise, fake_img_labels)
+            f_out_adv, f_out_cls = dis_net(fake_imgs)
+
+            # gradient penalty
+            alpha = torch.rand(real_imgs.size(0), 1, 1, 1).cuda()  # bh, C, H, W
+            x_hat = (alpha * real_imgs.data + (1 - alpha) * fake_imgs.data).requires_grad_(True)
+            out_src, _ = dis_net(x_hat)
+            d_loss_gp = gradient_penalty(out_src, x_hat, args)
+
+            d_real_loss = -torch.mean(r_out_adv)
+            d_fake_loss = torch.mean(f_out_adv)
+            d_adv_loss = d_real_loss + d_fake_loss
+
+            d_cls_loss = cls_criterion(r_out_cls, real_img_labels)
+
+            d_loss = d_adv_loss + lambda_cls * d_cls_loss + lambda_gp * d_loss_gp
+            d_loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(dis_net.parameters(), 5.)
+            dis_optimizer.step()
+
+            writer.add_scalar('d_loss', d_loss.item(), writer_dict['train_global_steps'])
+
+            #  Train Generator
+            gen_net.zero_grad()
+
+            gen_imgs = gen_net(noise, fake_img_labels)
+            g_out_adv, g_out_cls = dis_net(gen_imgs)
+
+            g_adv_loss = -torch.mean(g_out_adv)
+            g_cls_loss = cls_criterion(g_out_cls, fake_img_labels)
+            g_loss = g_adv_loss + lambda_cls * g_cls_loss
+            g_loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(gen_net.parameters(), 5.)
+            gen_optimizer.step()
+
+            # adjust learning rate
+            if lr_schedulers:
+                gen_scheduler, dis_scheduler = lr_schedulers
+                g_lr = gen_scheduler.step(global_steps)
+                d_lr = dis_scheduler.step(global_steps)
+                writer.add_scalar('LR/g_lr', g_lr, global_steps)
+                writer.add_scalar('LR/d_lr', d_lr, global_steps)
+
+            # moving average weight
+            ema_nimg = args.ema_kimg * 1000
+            cur_nimg = args.dis_batch_size * args.world_size * global_steps
+            if args.ema_warmup != 0:
+                ema_nimg = min(ema_nimg, cur_nimg * args.ema_warmup)
+                ema_beta = 0.5 ** (float(args.dis_batch_size * args.world_size) / max(ema_nimg, 1e-8))
+            else:
+                ema_beta = args.ema
+
+            # moving average weight
+            for p, avg_p in zip(gen_net.parameters(), gen_avg_param):
+                cpu_p = deepcopy(p)
+                avg_p = avg_p * ema_beta + ((1 - ema_beta) * cpu_p.cpu().data)
+                del cpu_p
+
+            writer.add_scalar('g_loss', g_loss.item(), writer_dict['train_global_steps'])
+            writer_dict['train_global_steps'] += 1
+            gen_step += 1
+
+            if gen_step and iter_idx % args.print_freq == 0 and args.rank == 0:
+                tqdm.write(
+                    "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f] [ema: %f] " %
+                    (epoch, args.max_epoch, iter_idx % len(train_loader), len(train_loader), d_loss.item(),
+                     g_loss.item(),
+                     ema_beta))
+            writer_dict['train_global_steps'] = global_steps + 1
+
 
         # plot the generated data
         gen_net.eval()

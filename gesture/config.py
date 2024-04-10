@@ -10,6 +10,7 @@ result_dir = root_dir + 'result/'
 meta_dir = top_meta_dir+'gesture/'
 ele_dir = meta_dir + 'EleCTX_Files/'
 info_dir = meta_dir + 'info/'
+log_dir=log_dir+'projects/gesture/'
 
 default_frequency=1000
 total_sub_trail_after_windowing=380 # 380 * 5 = 1900

@@ -41,7 +41,8 @@ elif socket.gethostname() == 'Long': # Yoga
     # tmp_data_dir='/Users/long/Documents/data/gesture/'
     mydrive='D:/' + drive+'/'
     computer = 'Yoga'
-    tmp_dir='D:/tmp/python_log/'
+    tmp_dir='D:/tmp/'
+    log_dir='D:/tmp/python_log/'
 elif socket.gethostname() == 'DESKTOP-FBDP919': # or laptop
     #sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
     top_data_dir = 'G:/data/'
@@ -89,7 +90,7 @@ class Logger(object):
 
     def flush(self):
         self.log.flush()
-logfilename=tmp_dir+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
+logfilename=log_dir+'pycharm/'+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
 sys.stdout = Logger(filename=logfilename)
 
 import os

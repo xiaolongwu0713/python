@@ -241,10 +241,7 @@ class PatchEmbedding_Linear(nn.Module):
         x = torch.cat([cls_tokens, x], dim=1)
         # position
         x += self.positions
-        return x    
-'''
-
-'''        
+        return x
         
 class Discriminator(nn.Sequential):
     def __init__(self, 
