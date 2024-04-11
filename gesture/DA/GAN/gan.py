@@ -143,7 +143,7 @@ wind = 500
 lambda_gp=10
 adversarial_loss = nn.BCEWithLogitsLoss()
 
-def gan(method,writer, sid, continuous, chn_num, class_num, wind_size, train_loader, epochs, result_dir,latent_dims):
+def gan(method,writer, sid, continuous, chn_num, class_num, wind_size, train_loader, epochs,latent_dims):
     #batch_size=train_loader.batch_size  # last batch is not the same
     class_num = 1  # in GAN, there are only two class, and a scalar value should be produced
     generator = SEEG_CNN_Generator_10channels(chn_num,latent_dims).to(device)  # SEEG_CNN_Generator().to(device)
@@ -300,8 +300,7 @@ def gan(method,writer, sid, continuous, chn_num, class_num, wind_size, train_loa
 
         if (epoch + 1) % 1 == 0:
             # def gen_data_wgangp(sid, chn_num, class_num, wind_size, result_dir, num_data_to_generate=500):
-            gen_data = gen_data_wgangp_(generator, latent_dims,
-                                            num_data_to_generate=plot_fig_number)  # (batch_size, 208, 500)
+            gen_data = gen_data_wgangp_(generator, latent_dims,num_data_to_generate=plot_fig_number)  # (batch_size, 208, 500)
 
             plot_buf = gen_plot(axs, gen_data, plot_channel_num)
             image = PIL.Image.open(plot_buf)

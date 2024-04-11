@@ -41,15 +41,8 @@ elif socket.gethostname() == 'Long': # Yoga
     # tmp_data_dir='/Users/long/Documents/data/gesture/'
     mydrive='D:/' + drive+'/'
     computer = 'Yoga'
-    tmp_dir='D:/tmp/'
-    log_dir='D:/tmp/python_log/'
-elif socket.gethostname() == 'DESKTOP-FBDP919': # or laptop
-    #sys.path.extend(['/Users/long/Documents/BCI/python_scripts/googleDrive'])
-    top_data_dir = 'G:/data/'
-    #tmp_data_dir='/Users/long/Documents/data/gesture/'
-    top_root_dir = 'C:/Users/xiaowu/' + drive + '/python/'
-    top_meta_dir = 'C:/Users/xiaowu/' + drive + '/meta/'
-    computer='mac'
+    tmp_dir='D:/tmp/python/'
+
 elif socket.gethostname() == 'workstation':
     #sys.path.extend(['C:/Users/wuxiaolong/Desktop/BCI/googledrive'])
     #data_dir = 'C:/Users/wuxiaolong/Desktop/BCI/data/gesture/'  # temp data dir
@@ -58,11 +51,7 @@ elif socket.gethostname() == 'workstation':
     top_meta_dir = 'C:/Users/wuxiaolong/'+drive+'/meta/'
     tmp_dir = 'H:/Long/data/tmp_dir_python/'
     computer='workstation'
-elif socket.gethostname() == 'DESKTOP-NP9A9VI':
-    top_data_dir = 'H:/Long/data/'  # temp data dir
-    top_root_dir = 'C:/Users/xiaol/'+drive+'/python/'
-    top_meta_dir = 'C:/Users/xiaol/'+drive+'/meta/'
-    tmp_dir='H:/Long/data/tmp_dir_python/'
+
 elif socket.gethostname() == 'LongsPC':
     top_data_dir = 'H:/Long/data/'  # temp data dir
     top_root_dir = 'C:/Users/Long/'+drive+'/python/'
@@ -90,7 +79,7 @@ class Logger(object):
 
     def flush(self):
         self.log.flush()
-logfilename=log_dir+'pycharm/'+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
+logfilename=tmp_dir+'log/pycharm/'+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
 sys.stdout = Logger(filename=logfilename)
 
 import os

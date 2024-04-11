@@ -14,8 +14,7 @@ import os
 import random
 
 from torchvision.transforms import ToTensor
-
-from common_dl import Tensor,device
+from common_dl import device, Tensor
 from gesture.DA.GAN.models import deepnet
 from gesture.DA.VAE.VAE import UnFlatten_ch_num, UnFlatten, SEEG_CNN_VAE
 from gesture.models.d2l_resnet import d2lresnet

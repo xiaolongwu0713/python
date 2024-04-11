@@ -151,12 +151,12 @@ def noise_injection_epoch(train_epochs,std_scale):
         train_epochs_NI.append(tmp)
     return train_epochs_NI
 
-def read_data_split_function(sid, fs, selected_channels=None,scaler='std'):
+def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None):
     # read data
     data,channelNum=read_data_(sid) # data: (1052092, 212)
     data, scalerr = norm_data(data, scaler=scaler)
     epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels)
-    test_epochs, val_epochs, train_epochs=data_split(epochs)
+    test_epochs, val_epochs, train_epochs=data_split(epochs,cv_idx=cv_idx)
     return test_epochs, val_epochs, train_epochs,scalerr
 
 def gen_epoch(data,fs,channelNum,selected_channels=None):
@@ -219,7 +219,7 @@ def norm_data(data,scaler='std'):
         print('No scaler.')
     return data,scaler
 
-def data_split(epochs):
+def data_split(epochs,cv_idx=None):
     epoch1=epochs['0'].get_data() # 20 trials. 8001 time points per trial for 8s.
     epoch2=epochs['1'].get_data()
     epoch3=epochs['2'].get_data()
@@ -230,12 +230,22 @@ def data_split(epochs):
 
     # validate=test=2 trials
     trial_number=[list(range(epochi.shape[0])) for epochi in list_of_epochs] #[ [0,1,2,...19],[0,1,2...19],... ]
-    test_trials=[[7, 4], [19, 11], [13, 3], [19, 2], [13, 11]]#test_trials=[random.sample(epochi, 2) for epochi in trial_number] # randomly choose two trial as the test dataset
-    # len(test_trials[0]) # test trials number
-    trial_number_left=[np.setdiff1d(trial_number[i],test_trials[i]) for i in range(class_number)]
 
-    val_trials=[[2, 13], [17, 2], [14, 6], [5, 15], [18, 14]] #val_trials=[random.sample(list(epochi), 2) for epochi in trial_number_left]
-    train_trials=[np.setdiff1d(trial_number_left[i],val_trials[i]).tolist() for i in range(class_number)]
+    if not cv_idx==None:
+        print("Using CV method.")
+        test_idx=[[0,1],[4,5],[8,9],[12,13],[16,17]]
+        val_idx = [[2,3], [6,7], [10,11], [14,15], [18,19]]
+        test_trials=[test_idx[cv_idx]] * 5
+        trial_number_left = [np.setdiff1d(trial_number[i], test_trials[i]) for i in range(class_number)]
+        val_trials = [val_idx[cv_idx]] * 5
+        train_trials = [np.setdiff1d(trial_number_left[i], val_trials[i]).tolist() for i in range(class_number)]
+    else:
+        test_trials=[[7, 4], [19, 11], [13, 3], [19, 2], [13, 11]]#test_trials=[random.sample(epochi, 2) for epochi in trial_number] # randomly choose two trial as the test dataset
+        # len(test_trials[0]) # test trials number
+        trial_number_left=[np.setdiff1d(trial_number[i],test_trials[i]) for i in range(class_number)]
+
+        val_trials=[[2, 13], [17, 2], [14, 6], [5, 15], [18, 14]] #val_trials=[random.sample(list(epochi), 2) for epochi in trial_number_left]
+        train_trials=[np.setdiff1d(trial_number_left[i],val_trials[i]).tolist() for i in range(class_number)]
 
     # no missing trials
     assert [sorted(test_trials[i]+val_trials[i]+train_trials[i]) for i in range(class_number)] == trial_number

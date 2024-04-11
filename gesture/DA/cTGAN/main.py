@@ -1,6 +1,19 @@
+import os
+import sys
+import socket
+
+if socket.gethostname() == 'workstation':
+    sys.path.extend(['C:/Users/wuxiaolong/mydrive/python'])
+elif socket.gethostname() == 'LongsMac':
+    sys.path.extend(['/Users/long/My Drive/python'])
+elif socket.gethostname() == 'DESKTOP-NP9A9VI':
+    sys.path.extend(['C:/Users/xiaol/My Drive/python/'])
+elif socket.gethostname() == 'Long': # Yoga
+    sys.path.extend(['D:/mydrive/python/'])
+
 from gesture.DA.cTGAN.models import *
 from gesture.DA.cTGAN.ctgan import train, LinearLrDecay, load_params, copy_params, cur_stages, gradient_penalty
-from gesture.DA.cTGAN.utils import set_log_dir, save_checkpoint, create_logger, mydataset
+from gesture.DA.cTGAN.utils import save_checkpoint, create_logger, mydataset
 from tqdm import tqdm
 import torch
 import torch.utils.data.distributed
@@ -14,9 +27,15 @@ import io
 import PIL.Image
 from torchvision.transforms import ToTensor
 import argparse
+from gesture.config import tmp_dir
+from datetime import datetime
+import pytz
+now = datetime.now(pytz.timezone('Asia/Shanghai'))
+timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--sid', default=1, type=int)
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int,help='node rank for distributed training')
     parser.add_argument('--seed', default=12345, type=int,help='seed for initializing training. ')
@@ -58,7 +77,16 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
+    #args.load_path='D:/tmp/python/gesture/DA/2024_04_10_16_09_06/Model/checkpoint_246.pth'
+    args.norm_method = 'std'
+    #sid=10
+    #args.sid = sid
+    args.fs = 1000
+    args.wind = 500
+    args.chn = 10
+    args.stride = 200
+    args.selected_channels = True
+    args.batch_size = 32
     random_seed=12345
     torch.manual_seed(random_seed)
     torch.cuda.manual_seed(random_seed)
@@ -67,10 +95,10 @@ def main():
     random.seed(random_seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-
+    print('Sid:'+str(args.sid)+'.')
     args.grow_steps = [0, 0]
 
-    # import network
+    # define network
     gen_net = Generator(seq_len=500, channels=10, num_classes=5, latent_dim=args.latent_dim, data_embed_dim=10,
                         label_embed_dim=10 ,depth=3, num_heads=5, forward_drop_rate=0.5, attn_drop_rate=0.5)
     dis_net = Discriminator(in_channels=10, patch_size=1, data_emb_size=50, label_emb_size=10, seq_length = 500, depth=3, n_classes=5)
@@ -79,25 +107,78 @@ def main():
     dis_net = dis_net.cuda()
 
     gen_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, gen_net.parameters()),
-                                    args.g_lr, (args.beta1, args.beta2))
+                                     args.g_lr, (args.beta1, args.beta2))
     dis_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, dis_net.parameters()),
-                                    args.d_lr, (args.beta1, args.beta2))
+                                     args.d_lr, (args.beta1, args.beta2))
+
+    if args.load_path:
+        print(f'=> resuming from {args.load_path}')
+        assert os.path.exists(args.load_path)
+        checkpoint_file = os.path.join(args.load_path)
+        assert os.path.exists(checkpoint_file)
+        checkpoint = torch.load(checkpoint_file)
+        start_epoch = checkpoint['epoch']
+        train_global_steps=13380 #checkpoint['train_global_steps']
+        best_fid = checkpoint['best_fid']
+
+        dis_net.load_state_dict(checkpoint['dis_state_dict'])
+        gen_optimizer.load_state_dict(checkpoint['gen_optimizer'])
+        dis_optimizer.load_state_dict(checkpoint['dis_optimizer'])
+
+        gen_net.load_state_dict(checkpoint['avg_gen_state_dict'])
+        gen_avg_param = copy_params(gen_net, mode='gpu')
+        gen_net.load_state_dict(checkpoint['gen_state_dict'])
+        #fixed_z = checkpoint['fixed_z']
+
+        args.path_helper = checkpoint['path_helper']
+        logger = create_logger(args.path_helper['log_path'])
+        print(f'=> loaded checkpoint {checkpoint_file} (epoch {start_epoch})')
+        writer = SummaryWriter(args.path_helper['log_path'])
+        del checkpoint
+    else:
+        start_epoch = 0
+        train_global_steps=0
+        best_fid = 1e4
+        args.path_helper = {}  # = set_log_dir('D:/data/BaiduSyncdisk/gesture/DA/cTGAN/' + str(args.sid) + '/')
+        # path_dict = {}
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        # set log path
+        # exp_path = os.path.join(root_dir, exp_name)
+        prefix = tmp_dir + 'DA/cTGAN/sid'+str(args.sid)+'/' + timestamp + '/'
+        os.makedirs(prefix)
+        args.path_helper['prefix'] = prefix
+
+        # set checkpoint path
+        ckpt_path = prefix + 'Model/'  # /os.path.join(prefix, 'Model')
+        os.makedirs(ckpt_path)
+        args.path_helper['ckpt_path'] = ckpt_path
+
+        log_path = prefix + 'Log/'  # os.path.join(prefix, 'Log')
+        os.makedirs(log_path)
+        args.path_helper['log_path'] = log_path
+
+        # set sample image path for fid calculation
+        sample_path = prefix + 'Samples'  # os.path.join(prefix, 'Samples')
+        os.makedirs(sample_path)
+        args.path_helper['sample_path'] = sample_path
+
+        writer = SummaryWriter(args.path_helper['log_path'])
+        checkpoint_dir = args.path_helper['ckpt_path']  # Path(writer.log_dir).parent.joinpath('Model')
+        print('Log dir: ' + writer.log_dir + '.')
+
+    writer_dict = {
+        'writer': writer,
+        'train_global_steps': train_global_steps,
+    }
 
     args.max_iter=args.max_epoch * 54
-    gen_scheduler = LinearLrDecay(gen_optimizer, args.g_lr, 0.0, 0, args.max_iter)
-    dis_scheduler = LinearLrDecay(dis_optimizer, args.d_lr, 0.0, 0, args.max_iter)
+    end_lr=0.00012
+    gen_scheduler = LinearLrDecay(gen_optimizer, args.g_lr, end_lr, 0, args.max_iter)
+    dis_scheduler = LinearLrDecay(dis_optimizer, args.d_lr, end_lr, 0, args.max_iter)
 
-    args.norm_method='std'
-    args.classi=0
-    args.sid=10
-    args.fs=1000
-    args.wind=500
-    args.chn=10
-    args.stride=200
-    args.selected_channels = True
-    args.batch_size=32
-    train_set = mydataset(args=args, norm=args.norm_method, data_mode='Train', single_class=False,
-                                  classi=args.classi)
+
+    train_set = mydataset(args=args, norm=args.norm_method, data_mode='Train',cv_idx=0) # sid10:1710
     train_loader = data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     
     args.max_epoch = np.ceil(args.max_iter * args.n_critic / len(train_loader))
@@ -106,18 +187,7 @@ def main():
     avg_gen_net = deepcopy(gen_net).cpu()
     gen_avg_param = copy_params(avg_gen_net) # model parameter to list
     del avg_gen_net
-    start_epoch = 0
-    best_fid = 1e4
 
-    args.path_helper = set_log_dir('D:/data/BaiduSyncdisk/gesture/DA/cTGAN/' + str(args.sid) + '/')
-    writer = SummaryWriter(args.path_helper['log_path'])
-    checkpoint_dir = args.path_helper['ckpt_path'] # Path(writer.log_dir).parent.joinpath('Model')
-    print('Log dir: ' + writer.log_dir + '.')
-
-    writer_dict = {
-        'writer': writer,
-        'train_global_steps': 0,
-    }
 
     # training
     fig, axs = plt.subplots(2, 2, figsize=(20, 5))
@@ -130,7 +200,7 @@ def main():
         print(f"path: {args.path_helper['prefix']}") if args.rank==0 else 0
 
         #train(args, gen_net, dis_net, gen_optimizer, dis_optimizer, gen_avg_param, train_loader, epoch, writer_dict, lr_schedulers)
-        writer = writer_dict['writer']
+        #writer = writer_dict['writer']
         gen_step = 0
         cls_criterion = nn.CrossEntropyLoss()
         lambda_cls = 1
@@ -217,7 +287,6 @@ def main():
                 del cpu_p
 
             writer.add_scalar('g_loss', g_loss.item(), writer_dict['train_global_steps'])
-            writer_dict['train_global_steps'] += 1
             gen_step += 1
 
             if gen_step and iter_idx % args.print_freq == 0 and args.rank == 0:
@@ -246,7 +315,8 @@ def main():
             'dis_optimizer': dis_optimizer.state_dict(),
             'best_fid': best_fid,
             'path_helper': args.path_helper,
-        }, checkpoint_dir, filename="checkpoint_"+str(epoch)+".pth")
+            'train_global_steps':global_steps,
+        }, args.path_helper['ckpt_path'], filename="checkpoint_"+str(epoch)+".pth")
         del avg_gen_net
 
 def gen_plot(gen_net, epoch, fig, axs, args):

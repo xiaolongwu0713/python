@@ -45,7 +45,7 @@ def visualization(data_list, analysis,labels):
 
     prep_data.append(prep_data_tmp)
   # Visualization parameter        
-  colors = ["tab:blue" for i in range(anal_sample_no)] + ["tab:orange" for i in range(anal_sample_no)]    
+  #colors = ["tab:blue" for i in range(anal_sample_no)] + ["tab:orange" for i in range(anal_sample_no)]
 
   if analysis == 'PCA':
     # PCA Analysis
@@ -57,7 +57,7 @@ def visualization(data_list, analysis,labels):
     f, ax = plt.subplots(1)
     for i in range(len(data_list)):
       plt.scatter(pca_results[i][:,0], pca_results[i][:,1],
-                c = tab_colors_names[i], alpha = 0.2) # , label = "Original"
+                c = colors[i], alpha = 0.2) # , label = "Original"
 
   
     ax.legend()
@@ -80,7 +80,7 @@ def visualization(data_list, analysis,labels):
 
     for i in range(len(data_list)):
       plt.scatter(tsne_results[anal_sample_no*i:anal_sample_no*(i+1),0], tsne_results[anal_sample_no*i:anal_sample_no*(i+1),1],
-                c = tab_colors_names[i], alpha = 0.2, label = labels[i]) #
+                c = colors[i], alpha = 0.2, label = labels[i]) #
   
     ax.legend()
       
