@@ -16,7 +16,6 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import timm
 import common_dl
 from gesture.DA.timegan.timegan import timegan
 from gesture.DA.utils import sine_data_generation
