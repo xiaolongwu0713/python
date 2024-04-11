@@ -35,7 +35,7 @@ timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sid', default=1, type=int)
+    parser.add_argument('--sid', default=10, type=int)
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int,help='node rank for distributed training')
     parser.add_argument('--seed', default=12345, type=int,help='seed for initializing training. ')
@@ -77,7 +77,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    #args.load_path='D:/tmp/python/gesture/DA/2024_04_10_16_09_06/Model/checkpoint_246.pth'
+    args.load_path='D:/tmp/python/gesture/DA/cTGAN/sid10/2024_04_10_16_09_06/Model/checkpoint_290.pth'
     args.norm_method = 'std'
     #sid=10
     #args.sid = sid
@@ -118,7 +118,7 @@ def main():
         assert os.path.exists(checkpoint_file)
         checkpoint = torch.load(checkpoint_file)
         start_epoch = checkpoint['epoch']
-        train_global_steps=13380 #checkpoint['train_global_steps']
+        train_global_steps=checkpoint['train_global_steps']
         best_fid = checkpoint['best_fid']
 
         dis_net.load_state_dict(checkpoint['dis_state_dict'])
@@ -131,7 +131,17 @@ def main():
         #fixed_z = checkpoint['fixed_z']
 
         args.path_helper = checkpoint['path_helper']
-        logger = create_logger(args.path_helper['log_path'])
+        if 1==1:
+            args.path_helper = {}
+            prefix= 'D:/tmp/python/gesture/DA/cTGAN/sid10/2024_04_10_16_09_06/'
+            args.path_helper['prefix']=prefix
+            ckpt_path = prefix + 'Model/'  # /os.path.join(prefix, 'Model')
+            args.path_helper['ckpt_path'] = ckpt_path
+            log_path = prefix + 'Log/'  # os.path.join(prefix, 'Log')
+            args.path_helper['log_path'] = log_path
+            sample_path = prefix + 'Samples'  # os.path.join(prefix, 'Samples')
+            args.path_helper['sample_path'] = sample_path
+        #logger = create_logger(args.path_helper['log_path'])
         print(f'=> loaded checkpoint {checkpoint_file} (epoch {start_epoch})')
         writer = SummaryWriter(args.path_helper['log_path'])
         del checkpoint
