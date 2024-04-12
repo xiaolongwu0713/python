@@ -7,7 +7,7 @@ from MIME_Huashan.config import data_dir
 
 sub_names=['1_HHFU016_0714','2_017_0725','3_0815_Ma_JinLiang_0815','4_HHFU22_0902','5_HHFU026_1102','6_HHFU027_motorimagery']
 # 'HHFU027_motorimagery': a,b,c,d,e,f,g,h shafts; each have 8 contacts; 8*8=64 electrodes;
-sid=2
+sid=6
 inspect=False
 sub_name=sub_names[sid-1]
 if sid==5:

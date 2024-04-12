@@ -36,8 +36,9 @@ timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sid', default=10, type=int)
+    parser.add_argument('--cv', type=int)
     parser.add_argument('--world-size', default=-1, type=int)
-    parser.add_argument('--rank', default=-1, type=int,help='node rank for distributed training')
+    #parser.add_argument('--rank', default=-1, type=int,help='node rank for distributed training')
     parser.add_argument('--seed', default=12345, type=int,help='seed for initializing training. ')
     parser.add_argument('--max_epoch',type=int,default=500,help='number of epochs of training')
     parser.add_argument('--max_iter',type=int,default=None,help='set the max iteration number')
@@ -47,8 +48,8 @@ def parse_args():
     parser.add_argument('--g_lr',type=float,default=0.0002,help='adam: gen learning rate')
     parser.add_argument('--d_lr',type=float,default=0.0002,help='adam: disc learning rate')
     parser.add_argument('--lr_decay',action='store_true',help='learning rate decay or not')
-    parser.add_argument('--beta1',type=float,default=0.0,help='adam: decay of first order momentum of gradient')
-    parser.add_argument('--beta2',type=float,default=0.9,help='adam: decay of first order momentum of gradient')
+    #parser.add_argument('--beta1',type=float,default=0.0,help='adam: decay of first order momentum of gradient')
+    #parser.add_argument('--beta2',type=float,default=0.9,help='adam: decay of first order momentum of gradient')
     parser.add_argument('--latent_dim',type=int,default=128,help='dimensionality of the latent space')
     parser.add_argument('--img_size',type=int,default=32,help='size of each image dimension')
     parser.add_argument('--channels',type=int,default=3,help='number of image channels')
@@ -67,12 +68,10 @@ def parse_args():
     parser.add_argument('--fid_stat', type=str, default="None",help='Discriminator Depth')
     parser.add_argument('--d_heads', type=int, default=4,help='number of heads')
     parser.add_argument('--dropout', type=float, default=0.,help='dropout ratio')
-    parser.add_argument('--ema', type=float, default=0.995,help='ema')
-    parser.add_argument('--ema_warmup', type=float, default=0.,help='ema warm up')
-    parser.add_argument('--ema_kimg', type=int, default=500,help='ema thousand images')
-
+    #parser.add_argument('--ema', type=float, default=0.995,help='ema')
+    #parser.add_argument('--ema_warmup', type=float, default=0.,help='ema warm up')
+    #parser.add_argument('--ema_kimg', type=int, default=500,help='ema thousand images')
     opt = parser.parse_args()
-
     return opt
 
 def main():
@@ -106,10 +105,8 @@ def main():
     gen_net = gen_net.cuda()
     dis_net = dis_net.cuda()
 
-    gen_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, gen_net.parameters()),
-                                     args.g_lr, (args.beta1, args.beta2))
-    dis_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, dis_net.parameters()),
-                                     args.d_lr, (args.beta1, args.beta2))
+    gen_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, gen_net.parameters()),args.g_lr)
+    dis_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, dis_net.parameters()),args.d_lr)
 
     if args.load_path:
         print(f'=> resuming from {args.load_path}')
@@ -188,7 +185,7 @@ def main():
     dis_scheduler = LinearLrDecay(dis_optimizer, args.d_lr, end_lr, 0, args.max_iter)
 
 
-    train_set = mydataset(args=args, norm=args.norm_method, data_mode='Train',cv_idx=0) # sid10:1710
+    train_set = mydataset(args=args, norm=args.norm_method, data_mode='Train',cv_idx=args.cv) # sid10:1710
     train_loader = data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     
     args.max_epoch = np.ceil(args.max_iter * args.n_critic / len(train_loader))
@@ -281,20 +278,20 @@ def main():
                 writer.add_scalar('LR/g_lr', g_lr, global_steps)
                 writer.add_scalar('LR/d_lr', d_lr, global_steps)
 
-            # moving average weight
-            ema_nimg = args.ema_kimg * 1000
-            cur_nimg = args.dis_batch_size * args.world_size * global_steps
-            if args.ema_warmup != 0:
-                ema_nimg = min(ema_nimg, cur_nimg * args.ema_warmup)
-                ema_beta = 0.5 ** (float(args.dis_batch_size * args.world_size) / max(ema_nimg, 1e-8))
-            else:
-                ema_beta = args.ema
-
-            # moving average weight
-            for p, avg_p in zip(gen_net.parameters(), gen_avg_param):
-                cpu_p = deepcopy(p)
-                avg_p = avg_p * ema_beta + ((1 - ema_beta) * cpu_p.cpu().data)
-                del cpu_p
+            # # moving average weight
+            # ema_nimg = args.ema_kimg * 1000
+            # cur_nimg = args.dis_batch_size * args.world_size * global_steps
+            # if args.ema_warmup != 0:
+            #     ema_nimg = min(ema_nimg, cur_nimg * args.ema_warmup)
+            #     ema_beta = 0.5 ** (float(args.dis_batch_size * args.world_size) / max(ema_nimg, 1e-8))
+            # else:
+            #     ema_beta = args.ema
+            #
+            # # moving average weight
+            # for p, avg_p in zip(gen_net.parameters(), gen_avg_param):
+            #     cpu_p = deepcopy(p)
+            #     avg_p = avg_p * ema_beta + ((1 - ema_beta) * cpu_p.cpu().data)
+            #     del cpu_p
 
             writer.add_scalar('g_loss', g_loss.item(), writer_dict['train_global_steps'])
             gen_step += 1

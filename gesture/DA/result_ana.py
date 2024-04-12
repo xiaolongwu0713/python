@@ -6,7 +6,7 @@ from gesture.DA.tts_cgan_main.TransCGAN_model import Generator
 from dotmap import DotMap
 
 from gesture.DA.GAN.gan import SEEG_CNN_Generator_10channels
-from gesture.DA.GAN.WGAN_GP import gen_data_wgangp_
+from gesture.DA.WGANGP.WGAN_GP import gen_data_wgangp_
 from gesture.feature_selection.utils import get_selected_channel_gumbel
 from gesture.utils import read_good_sids, read_sids, read_gen_data, windowed_data, \
     read_data_split_function, noise_injection_epoch
@@ -95,8 +95,8 @@ critic='deepnet' # ‘resnet'/'deepnet'
 sid=10
 ch_num=208
 
-from gesture.DA.GAN.WGAN_GP import SEEG_CNN_Generator2
-from gesture.DA.GAN.WGAN_GP import latent_dims as WGANGP_lantent_dims
+from gesture.DA.WGANGP.WGAN_GP import SEEG_CNN_Generator2
+from gesture.DA.WGANGP.WGAN_GP import latent_dims as WGANGP_lantent_dims
 from gesture.config import trial_num
 num_data_to_generate=trial_num[str(sid)]
 generator = SEEG_CNN_Generator2(10,'std').to(device)

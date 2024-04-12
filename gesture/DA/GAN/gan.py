@@ -172,13 +172,13 @@ def gen_data_wgangp(sid, chn_num, class_num, wind_size, latent_dims, result_dir,
     return gen_data
 
 
-def gen_data_wgangp_(generator, latent_dims, num_data_to_generate=111):
-    class_num=5
+def gen_data_wgangp_(generator, latent_dims, num_data_to_generate=111,class_num=0):
     with torch.no_grad():
         generator.eval()
         #for epoch in range(num_data_to_generate):
         z = torch.randn(num_data_to_generate, latent_dims).to(device)
-        gen_label = torch.randint(0, class_num, (num_data_to_generate,1)).to(device)
+        #gen_label = torch.randint(0, class_num, (num_data_to_generate,1)).to(device)
+        gen_label=torch.tensor([class_num,]*num_data_to_generate).unsqueeze(1).to(device)
         gen_data = generator(z,gen_label)  # torch.Size([1, 208, 500])
         new_data = gen_data.cpu().numpy()  # (500, 208, 500)
         return new_data

@@ -1,6 +1,9 @@
 import argparse
 import sys, os
 import socket
+
+from gesture.DA.cTGAN.ctgan import LinearLrDecay
+
 if socket.gethostname() == 'workstation':
     sys.path.extend(['C:/Users/wuxiaolong/mydrive/python'])
 elif socket.gethostname() == 'LongsMac':
@@ -14,7 +17,7 @@ import PIL
 from torch.autograd import Variable
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
-
+from gesture.DA.metrics.visualization import visualization
 from gesture.DA.cTGAN.utils import save_checkpoint
 import dateutil, pytz
 import numpy as np
@@ -104,15 +107,14 @@ train_set = myDataset(X_train, y_train)
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 one_batch = next(iter(train_loader))[0]  # torch.Size([32, 208, 500])
 chn_num = one_batch.shape[1]
-# train(sid,continuous,train_loader,chn_num,save_gen_dir)
+labels=np.array([i[0] for i in y_train.tolist()])
+X_train_class0, labels0 = X_train[labels==0,:,:], labels[labels==0] # (304, 10, 500)
 
 print("Generate data using " + gen_method + ".")
 #gan(gen_method, writer, sid, continuous, chn_num, class_number, wind, train_loader, epochs, latent_dims)
 
-learning_rate = 0.0001  # 0.0001/2
-weight_decay = 0.0001
-b1 = 0.5  # default=0.9; decay of first order momentum of gradient
-b2 = 0.999
+learning_rate = 0.0002  # 0.0001/2
+weight_decay = 0.001
 dropout_level = 0.05
 class_number = 5
 wind = 500
@@ -124,9 +126,10 @@ from gesture.DA.GAN.models import deepnet
 discriminator = deepnet(gen_method,chn_num, 1, wind).to(device)  # SEEG_CNN_Discriminator().to(device)
 #discriminator = Discriminator(chn_num).to(device)
 # Optimizer
-optimizer_G = torch.optim.Adam(generator.parameters(), lr=learning_rate, weight_decay=weight_decay, betas=(b1, b2))
-optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=learning_rate, weight_decay=weight_decay,
-                               betas=(b1, b2))
+optimizer_G = torch.optim.Adam(generator.parameters(), lr=learning_rate, weight_decay=weight_decay)
+optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=learning_rate, weight_decay=weight_decay)
+#gen_scheduler = LinearLrDecay(optimizer_G, learning_rate, 0.0001, 0, args.max_iter)
+#dis_scheduler = LinearLrDecay(optimizer_D, learning_rate, 0.0001, 0, args.max_iter)
 
 if args.load_path:
     print(f'=> resuming from {args.load_path}')
@@ -150,6 +153,7 @@ if args.load_path:
     # logger = create_logger(args.path_helper['log_path'])
     print(f'=> loaded checkpoint {checkpoint_file} (epoch {pre_epochs})')
     writer = SummaryWriter(args.path_helper['log_path'])
+    log_path=args.path_helper['log_path']
     del checkpoint
 else:
     print(f'=> Fresh training. ')
@@ -177,6 +181,7 @@ else:
     discriminator.apply(weights_init)
     global_steps = 0
 
+print('Log path: '+log_path+'.')
 
 d_losses = []
 g_losses = []
@@ -284,13 +289,26 @@ for epoch in range(pre_epochs, pre_epochs + epochs):
 
     if (epoch + 1) % 1 == 0:
         # def gen_data_wgangp(sid, chn_num, class_num, wind_size, result_dir, num_data_to_generate=500):
-        gen_data = gen_data_wgangp_(generator, latent_dims,num_data_to_generate=plot_fig_number)  # (batch_size, 208, 500)
-
-        plot_buf = gen_plot(axs, gen_data, plot_channel_num)
-        image = PIL.Image.open(plot_buf)
+        gen_data = gen_data_wgangp_(generator, latent_dims,num_data_to_generate=304)  # (batch_size, 208, 500)
+        #plot_buf = gen_plot(axs, gen_data, plot_channel_num)
+        for i in range(2):  # 4 plots
+            for j in range(2):
+                axs[i, j].clear()
+                for k in range(plot_channel_num):
+                    axs[i, j].plot(gen_data[i * 2 + j, k, :])
+        plt.figure(fig)
+        plt.savefig('del_figure.png')
+        image = PIL.Image.open('../del_figure.png')
         image = ToTensor()(image).unsqueeze(0)
-        # writer = SummaryWriter(comment='synthetic signals')
-        writer.add_image('Image', image[0], global_steps)
+        writer.add_image('Image/raw', image[0], global_steps)
+
+        ff = visualization([gen_data.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)], 'tSNE', labels,
+                                  display=False,epoch=epoch)
+        plt.figure(ff)
+        plt.savefig('del_figure2.png')
+        image2 = PIL.Image.open('../del_figure2.png')
+        image2 = ToTensor()(image2).unsqueeze(0)
+        writer.add_image('Image/tSNE', image2[0], global_steps)
 
         state_D = {
             'net': discriminator.state_dict(),

@@ -9,6 +9,7 @@ Code author: Jinsung Yoon (jsyoon0823@gmail.com)
 visualization_metrics.py
 Note: Use PCA or tSNE for generated and original data visualization
 """
+import io
 
 # Necessary packages
 from sklearn.manifold import TSNE
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from common_plot import *
    
-def visualization(data_list, analysis,labels):
+def visualization(data_list, analysis,labels, display=True,epoch=None):
   """Using PCA or tSNE for generated and original data visualization.
   
   Args:
@@ -61,7 +62,10 @@ def visualization(data_list, analysis,labels):
 
   
     ax.legend()
-    plt.title('PCA plot')
+    if epoch:
+      plt.title('PCA plot'+',epoch:'+str(epoch)+'.')
+    else:
+      plt.title('PCA plot')
     plt.xlabel('x-pca')
     plt.ylabel('y_pca')
     plt.show()
@@ -72,7 +76,7 @@ def visualization(data_list, analysis,labels):
     prep_data_final = np.concatenate(np.asarray(prep_data,), axis = 0)
     
     # TSNE anlaysis
-    tsne = TSNE(n_components = 2, verbose = 1, perplexity = 40, n_iter = 300)
+    tsne = TSNE(n_components = 2, verbose = 0, perplexity = 40, n_iter = 300) # verbose, lower->fewer msg
     tsne_results = tsne.fit_transform(prep_data_final)
       
     # Plotting
@@ -83,12 +87,19 @@ def visualization(data_list, analysis,labels):
                 c = colors[i], alpha = 0.2, label = labels[i]) #
   
     ax.legend()
-      
-    plt.title('t-SNE plot')
+
+    if epoch:
+      plt.title('tSNE plot' + ',epoch:' + str(epoch) + '.')
+    else:
+      plt.title('tSNE plot')
     plt.xlabel('x-tsne')
     plt.ylabel('y_tsne')
+
+  if display:
     plt.show()
   return f
+
+
 
 
 
