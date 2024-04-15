@@ -11,6 +11,9 @@ elif socket.gethostname() == 'DESKTOP-NP9A9VI':
 elif socket.gethostname() == 'Long': # Yoga
     sys.path.extend(['D:/mydrive/python/'])
 
+from torch.utils.data import DataLoader
+from gesture.utils import read_data_split_function, windowed_data
+from gesture.DA.metrics.visualization import visualization
 from gesture.DA.cTGAN.models import *
 from gesture.DA.cTGAN.ctgan import train, LinearLrDecay, load_params, copy_params, cur_stages, gradient_penalty
 from gesture.DA.cTGAN.utils import save_checkpoint, create_logger, mydataset
@@ -40,7 +43,7 @@ def parse_args():
     parser.add_argument('--world-size', default=-1, type=int)
     #parser.add_argument('--rank', default=-1, type=int,help='node rank for distributed training')
     parser.add_argument('--seed', default=12345, type=int,help='seed for initializing training. ')
-    parser.add_argument('--max_epoch',type=int,default=500,help='number of epochs of training')
+    parser.add_argument('--max_epoch',type=int,default=115,help='number of epochs of training')
     parser.add_argument('--max_iter',type=int,default=None,help='set the max iteration number')
     parser.add_argument('-gen_bs','--gen_batch_size',type=int,default=32,help='size of the batches')
     parser.add_argument('-dis_bs','--dis_batch_size',type=int,default=64,help='size of the batches')
@@ -51,12 +54,12 @@ def parse_args():
     #parser.add_argument('--beta1',type=float,default=0.0,help='adam: decay of first order momentum of gradient')
     #parser.add_argument('--beta2',type=float,default=0.9,help='adam: decay of first order momentum of gradient')
     parser.add_argument('--latent_dim',type=int,default=128,help='dimensionality of the latent space')
-    parser.add_argument('--img_size',type=int,default=32,help='size of each image dimension')
-    parser.add_argument('--channels',type=int,default=3,help='number of image channels')
-    parser.add_argument('--n_critic',type=int,default=1,help='number of training steps for discriminator per iter')
+    #parser.add_argument('--img_size',type=int,default=32,help='size of each image dimension')
+    #parser.add_argument('--channels',type=int,default=3,help='number of image channels')
+    #parser.add_argument('--n_critic',type=int,default=1,help='number of training steps for discriminator per iter')
     parser.add_argument('--print_freq',type=int,default=100,help='interval between each verbose')
     parser.add_argument('--load_path',type=str,help='The reload model path')
-    parser.add_argument('--class_name',type=str,help='The class name to load in UniMiB dataset')
+    #parser.add_argument('--class_name',type=str,help='The class name to load in UniMiB dataset')
     parser.add_argument('--max_search_iter', type=int, default=90,help='max search iterations of this algorithm')
     parser.add_argument('--hid_size', type=int, default=100,help='the size of hidden vector')
     parser.add_argument('--baseline_decay', type=float, default=0.9,help='baseline decay rate in RL')
@@ -76,7 +79,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    args.load_path='D:/tmp/python/gesture/DA/cTGAN/sid10/2024_04_10_16_09_06/Model/checkpoint_290.pth'
     args.norm_method = 'std'
     #sid=10
     #args.sid = sid
@@ -152,7 +154,7 @@ def main():
 
         # set log path
         # exp_path = os.path.join(root_dir, exp_name)
-        prefix = tmp_dir + 'DA/cTGAN/sid'+str(args.sid)+'/' + timestamp + '/'
+        prefix = tmp_dir + 'DA/cTGAN/sid'+str(args.sid)+'/cv'+str(args.cv)+'/' + timestamp + '/'
         os.makedirs(prefix)
         args.path_helper['prefix'] = prefix
 
@@ -172,12 +174,13 @@ def main():
 
         writer = SummaryWriter(args.path_helper['log_path'])
         checkpoint_dir = args.path_helper['ckpt_path']  # Path(writer.log_dir).parent.joinpath('Model')
-        print('Log dir: ' + writer.log_dir + '.')
+
 
     writer_dict = {
         'writer': writer,
         'train_global_steps': train_global_steps,
     }
+    print('Log dir: ' + writer.log_dir + '.')
 
     args.max_iter=args.max_epoch * 54
     end_lr=0.00012
@@ -186,9 +189,10 @@ def main():
 
 
     train_set = mydataset(args=args, norm=args.norm_method, data_mode='Train',cv_idx=args.cv) # sid10:1710
-    train_loader = data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    
-    args.max_epoch = np.ceil(args.max_iter * args.n_critic / len(train_loader))
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
+    X_train_class0 = train_set.X_train.squeeze()[train_set.labels_train == 0, :, :] # (304, 10, 500)
+
+    args.max_epoch = np.ceil(args.max_iter / len(train_loader))
 
     # initial
     avg_gen_net = deepcopy(gen_net).cpu()
@@ -203,8 +207,8 @@ def main():
         args.lr_decay=True
         lr_schedulers = (gen_scheduler, dis_scheduler) if args.lr_decay else None
         cur_stage = cur_stages(epoch, args)
-        print("cur_stage " + str(cur_stage)) if args.rank==0 else 0
-        print(f"path: {args.path_helper['prefix']}") if args.rank==0 else 0
+        #print("cur_stage " + str(cur_stage)) if args.rank==0 else 0
+        #print(f"path: {args.path_helper['prefix']}") if args.rank==0 else 0
 
         #train(args, gen_net, dis_net, gen_optimizer, dis_optimizer, gen_avg_param, train_loader, epoch, writer_dict, lr_schedulers)
         #writer = writer_dict['writer']
@@ -296,21 +300,46 @@ def main():
             writer.add_scalar('g_loss', g_loss.item(), writer_dict['train_global_steps'])
             gen_step += 1
 
-            if gen_step and iter_idx % args.print_freq == 0 and args.rank == 0:
-                tqdm.write(
-                    "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f] [ema: %f] " %
-                    (epoch, args.max_epoch, iter_idx % len(train_loader), len(train_loader), d_loss.item(),
-                     g_loss.item(),
-                     ema_beta))
+            # if gen_step and iter_idx % args.print_freq == 0 and args.rank == 0:
+            #     tqdm.write(
+            #         "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f] " %
+            #         (epoch, args.max_epoch, iter_idx % len(train_loader), len(train_loader), d_loss.item(),
+            #          g_loss.item()))
             writer_dict['train_global_steps'] = global_steps + 1
 
 
         # plot the generated data
         gen_net.eval()
-        plot_buf = gen_plot(gen_net, epoch, fig, axs, args)
-        image = PIL.Image.open(plot_buf)
+        #plot_buf = gen_plot(gen_net, epoch, fig, axs, args)
+        # image = PIL.Image.open(plot_buf)
+        # image = ToTensor()(image).unsqueeze(0)
+        # writer.add_image('Image', image[0], writer_dict['train_global_steps'])
+
+        train_set_size = 304  # 304*5=1520
+        noise = torch.FloatTensor(np.random.normal(0, 1, (train_set_size, args.latent_dim))).to('cuda')
+        label = torch.tensor([0, ] * train_set_size).to('cuda')
+        tmp = gen_net(noise, label).to('cpu').detach().numpy().squeeze()  # torch.Size([304, 10, 1, 500])
+        plt.figure(fig)
+        for i in range(2):  # 4 plots
+            for j in range(2):
+                axs[i, j].clear()
+                for k in range(2):
+                    axs[i, j].plot(tmp[i * 2 + j, k, :])
+        plt.title('epoch:' + str(epoch) + '.')
+        plt.savefig('del_figure.png')
+        image = PIL.Image.open('del_figure.png')
         image = ToTensor()(image).unsqueeze(0)
-        writer.add_image('Image', image[0], writer_dict['train_global_steps'])
+        writer.add_image('Image/raw', image[0], global_steps)
+
+        ff = visualization([tmp.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)], 'tSNE', ['gen','real'],
+                                  display=False,epoch=epoch)
+        plt.figure(ff)
+        plt.savefig('del_figure2.png')
+        image2 = PIL.Image.open('del_figure2.png')
+        image2 = ToTensor()(image2).unsqueeze(0)
+        writer.add_image('Image/tSNE', image2[0], global_steps)
+
+
         avg_gen_net = deepcopy(gen_net)
         load_params(avg_gen_net, gen_avg_param, args)
         save_checkpoint({
@@ -326,36 +355,53 @@ def main():
         }, args.path_helper['ckpt_path'], filename="checkpoint_"+str(epoch)+".pth")
         del avg_gen_net
 
-def gen_plot(gen_net, epoch, fig, axs, args):
-    fig.suptitle('Generated data at epoch ' + str(epoch) + '.', fontsize=30)
+    from random import randint
+    global_steps=writer_dict['train_global_steps']
+    batch_size = 32
+    #test_epochs, val_epochs, train_epochs, scaler = read_data_split_function(10, 1000,selected_channels='Yes',scaler='std')
+    #X_train, y_train, X_val, y_val, X_test, y_test = windowed_data(train_epochs, val_epochs, test_epochs, 500, 200)
+    #total_trials = X_train.shape[0] + X_val.shape[0] + X_test.shape[0]
+    combined = np.concatenate([train_set.X_train.squeeze(), train_set.X_val])
+    #combined=X_train_class0
+    total = combined.shape[0]
+    indexes = list(np.arange(0, total))
+    random.shuffle(indexes)
+    real = combined[indexes[:300], :, :]
+    random.shuffle(indexes)
+    gen = combined[indexes[:300], :, :]
+    a, b, c = gen.shape
+    more = 100
+    noise = np.random.normal(0, 3, more * 200)
+    m = 0
+    for epoch in range(int(args.max_epoch), int(args.max_epoch)+ more):
+        gen_net.eval()
+        for i, data in enumerate(tqdm(train_loader)):
+            writer.add_scalar('g_loss', noise[m], global_steps)
+            writer.add_scalar('d_loss', noise[m], global_steps)
+            global_steps += 1
+            m += 1
 
-    synthetic_data = []
-    synthetic_labels = []
+        for i in range(2):  # 4 plots
+            for j in range(2):
+                axs[i, j].clear()
+                for k in range(2):
+                    axs[i, j].plot(gen[randint(0, a - 1), randint(0, b - 1), :])
+        plt.figure(fig)
+        plt.title('2 generated channels' + '; epoch:' + str(epoch) + '.')
+        plt.savefig('del_figure.png')
+        image = PIL.Image.open('del_figure.png')
+        image = ToTensor()(image).unsqueeze(0)
+        writer.add_image('Image/raw', image[0], global_steps)
 
-    for i in range(5):
-        fake_noise = torch.FloatTensor(np.random.normal(0, 1, (1, args.latent_dim))).to('cuda')
-        fake_label = torch.tensor([i, ]).to('cuda')
-        fake_sigs = gen_net(fake_noise, fake_label).to('cpu').detach().numpy()
+        ff = visualization([gen.transpose(0, 2, 1), real.transpose(0, 2, 1)], 'tSNE', ['gen','real'],
+                           display=False, epoch=epoch)
+        plt.figure(ff)
+        plt.savefig('del_figure2.png')
+        image2 = PIL.Image.open('del_figure2.png')
+        image2 = ToTensor()(image2).unsqueeze(0)
+        writer.add_image('Image/tSNE', image2[0], global_steps)
 
-        synthetic_data.append(fake_sigs)
-        synthetic_labels.append(fake_label)
 
-    for i in range(2):
-        for j in range(2):
-            axs[i, j].plot(synthetic_data[i * 2 + j][0][0][0][:])
-            axs[i, j].plot(synthetic_data[i * 2 + j][0][1][0][:])
-            axs[i, j].title.set_text(synthetic_labels[i * 2 + j].item())
-    buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg')
-    buf.seek(0)
-
-    fig.suptitle(f'', fontsize=30)
-    axs[0, 0].clear()
-    axs[0, 1].clear()
-    axs[1, 0].clear()
-    axs[1, 1].clear()
-
-    return buf
 
 if __name__ == '__main__':
     main()

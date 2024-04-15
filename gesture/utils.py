@@ -144,12 +144,13 @@ def read_data(sid, fs, selected_channels=None,scaler='std',augment_with_noise_st
 
     return test_epochs, val_epochs, train_epochs,scaler
 
-def noise_injection_epoch(train_epochs,std_scale):
+def noise_injection_epoch_list(train_epochs,std_scale):
     train_epochs_NI=list()
     for cli in range(len(train_epochs)):
         tmp=noise_injection_3d(train_epochs[cli],std_scale)
         train_epochs_NI.append(tmp)
     return train_epochs_NI
+
 
 def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None):
     # read data
@@ -256,30 +257,27 @@ def data_split(epochs,cv_idx=None):
 
     return test_epochs, val_epochs, train_epochs
 
-def read_gen_data(sid,method,epoch,scaler='std'):
+def read_gen_data(sid,method,time_stamp,scaler='std',cv=1):
     print("Reading generated data.")
-    data_folder = data_dir + 'preprocessing/' + 'P' + str(sid) + '/'+method+'/'
-
+    #data_folder = data_dir + 'preprocessing/' + 'P' + str(sid) + '/'+method+'/'
+    data_folder = 'D:/tmp/python/gesture/DA/'+method+'/sid' + str(sid) + '/cv' + str(cv) + '/' + time_stamp+ '/Samples/'
     gen_class=[]
     if scaler=='std':
         scaler = StandardScaler()
     for clas in range(5):
-        if method=='timeGAN':
-            tmp = np.load(data_folder + 'gen_class_' + str(clas) + '.npy')
-        else:
-            tmp_file = data_folder + 'gen_class_' + str(clas)+ '*.npy'
-            tmp_file = os.path.normpath(glob.glob(tmp_file)[0])
-            tmp = np.load(tmp_file, allow_pickle=True) # (760, 5, 500)
+        tmp_file = data_folder + 'class' + str(clas)+ '_cv'+str(cv)+'.npy'
+        #tmp_file = os.path.normpath(glob.glob(tmp_file)[0])
+        tmp = np.load(tmp_file, allow_pickle=True) # (760, 5, 500)
         tmp2=np.zeros((tmp.shape))
         for i, trial in enumerate(tmp):
             scaler = StandardScaler()
             dataa = scaler.fit_transform((trial.transpose()))
             tmp2[i]=dataa.transpose()
         gen_class.append(tmp2)
-
+    print('Reading augmented data done.')
     return gen_class
 
-def windowed_data(train_epochs, val_epochs, test_epochs, wind, stride, gen_data_all=None, retrain=None, method=None):
+def windowed_data(train_epochs, val_epochs, test_epochs, wind, stride, gen_data_all=None, train_mode=None, method=None):
     X_train = []
     y_train = []
     X_val = []
@@ -308,7 +306,7 @@ def windowed_data(train_epochs, val_epochs, test_epochs, wind, stride, gen_data_
     for clas, epochi in enumerate(train_epochs):
         Xi, y = slide_epochs(epochi, clas, wind, stride)  # (576, 208, 500)
         assert Xi.shape[0] == len(y)
-        if retrain == 'DA' and method != 'NI':
+        if train_mode == 'DA' and method != 'NI':
             Xi = np.concatenate((Xi, gen_data_all[clas]), axis=0)
             y = [clas] * Xi.shape[0]
             if clas == 0:

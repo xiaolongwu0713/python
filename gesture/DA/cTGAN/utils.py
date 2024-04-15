@@ -47,18 +47,19 @@ class mydataset(Dataset):
 
         # use the real data
         test_epochs, val_epochs, train_epochs, scaler=read_data_split_function(self.sid,self.fs,scaler=self.norm,selected_channels=selected_channels,cv_idx=cv_idx)
-        X_train,y_train,X_val,y_val,X_test,y_test=windowed_data(train_epochs,val_epochs,test_epochs,self.wind,self.stride)
+        X_train,y_train,self.X_val,y_val,X_test,y_test=windowed_data(train_epochs,val_epochs,test_epochs,self.wind,self.stride)
         # or uncomment below to use a dummy data set to test the program
         # X_train, y_train,  = np.random.rand(1520, 10, 500),np.random.rand(1520, 1),
         # X_val, y_val= np.random.rand(190, 10, 500), np.random.rand(190,1)
         # X_test, y_test=np.random.rand(190, 10, 500), np.random.rand(190,1)
 
-        self.X_train=np.concatenate((X_train,X_val),axis=0)
-        y_train=np.concatenate((y_train,y_val),axis=0)
+        #self.X_train=np.concatenate((X_train,X_val),axis=0)
+        #y_train=np.concatenate((y_train,y_val),axis=0)
         ## get different class data ##
-        self.labels_train=np.array([i[0] for i in y_train.tolist()])
+        labels = np.array([i[0] for i in y_train.tolist()])
+        self.labels_train=labels #np.asarray([i[0] for i in labels.tolist()])
         # format to (1524, 3, 1, 150), (100000, 1, 1, 187)
-        self.X_train = self.X_train[:, :, np.newaxis, :]
+        self.X_train = X_train[:, :, np.newaxis, :]
     def __len__(self):
         return len(self.X_train)
 

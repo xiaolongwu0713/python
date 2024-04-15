@@ -1,79 +1,33 @@
 #!/bin/bash
-# usage: ./loop_main_gen_data.sh
-# default window and stride: ./loop_main_gen_data.sh 500 100
-if [[ $HOSTNAME == "workstation"  ]];then
-	source /cygdrive/c/Users/Public/venv/bci/Scripts/activate
-	sidsfile="/home/wuxiaolong/mydrive/meta/gesture/info/Info.txt"
-	good_sidsfile="/home/wuxiaolong/mydrive/meta/gesture/good_sids.txt"
-	echo "workstation"
-fi
 
-if [[ $HOSTNAME == "DESKTOP-NP9A9VI"  ]];then
-	source /cygdrive/c/Users/Public/venvs/bci/Scripts/activate
-	sidsfile="/home/xiaol/mydrive/meta/gesture/info/Info.txt"
-	good_sidsfile="/home/xiaol/mydrive/meta/gesture/good_sids.txt"
-	echo "DESKTOP"
-fi
-
-if [[ $HOSTNAME == "longsMac"  ]];then
-	source /usr/local/venv/gesture/bin/activate
-	sidsfile="/Users/long/mydrive/meta/gesture/info/Info.txt"
-	good_sidsfile="/Users/long/mydrive/meta/gesture/good_sids.txt"
-	echo "longsMac"
-fi
-
-#declare -a sids
-sids=()
-while IFS= read -r line
-do
- sid=${line%,*}
- sids+=("$sid")
- #echo $sid
- #echo ${sids[@]}
-done < "$sidsfile"
-#echo ${sids[@]}
-
-good_sids=()
-while IFS= read -r line
-do
- sid=${line%}
- good_sids+=("$sid")
- #echo $sid
- #echo ${sids[@]}
-done < "$good_sidsfile"
-
-#echo ${good_sids[@]}
-
-for sid in ${sids[@]} #${good_sids[@]} #${sids[@]}
-#for sid in 25 29 32 34 41
+# possible network: 'deepnet'/'resnet'/'EEGnet'
+# possible train_mode: 'original'/'selected_channels'/'DA'
+# possible method of selected_channels: 'gumbel'/'stg'/'mannual'
+# possible method of DA: 'VAE'/'cTGAN'/'WGANGP'/'NI'
+for sid in 25 29 32 34 41
 do
   sid=10 # choose a single user to test
 
-  #network='deepnet_da'
-  #for network in 'eegnet' 'shallowFBCSPnet' 'deepnet' 'resnet' 'deepnet_da'
-  #do
+  for cv in 1 2 3 4 5
+  do
 
-  network='deepnet'
-  # usage: ./loop_main.sh 'selected_channels'/'DA'  'gumbel'/'stg'/'mannual' or 'VAE'/'GAN'/'WGAN'
+    network='deepnet'
+    train_mode='DA' #'original'
 
-  # vanilla training: call: ./loop_main.sh # (no selection, or augmentation), and uncomment below two lines
-  #echo "Training sid: $sid using $network."
-  #python main_all.py $sid $network 1000 500 200
+    if [ $train_mode = 'original' ]
+    then
+      echo "CMD: Training sid: $sid using $network."
+      /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $cv
+    elif [ $train_mode = 'DA' ]
+    then
+      DA_method='CWGANGP' #'cTGAN'
+      /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $DA_method $cv
+    fi
 
-  # using selected channels: call: ./loop_main.sh 'selected_channels' 'stg'/gumbel, and uncomment below two lines
-  #echo "Training sid: $sid using $2 selecting method. "
-  #python main_all.py $sid $network 1000 500 200 $1 $2
+    break # test for a single user only
+  done
 
-  # re-train with data augmented from WGAN using 200 epochs
-  #call: ./loop_main.sh DA CWGANGP 200 from CMD and uncomment below
-  echo "Training sid: $sid using method $2. "
-  python main_all.py $sid $network 1000 500 200 $1 $2 $3
-
-  #call: ./loop_main.sh DA NI from CMD and uncomment below:
-  #echo "Training sid: $sid using data augmented by $1/$2. "
-  #python main_all.py $sid $network 1000 500 200 $1 $2
-
-  break # test for a single user only
+  break
 done
 #done
 

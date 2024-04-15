@@ -64,3 +64,16 @@ def printVariables(variable_names):
 trial_num={'10':304,
            }
 
+
+# CWGANGP
+#time_stamp=['2024_04_12_14_49_29',]
+#ckpt_epoch=[333,]
+# cTGAN
+#time_stamp_cTGAN=['2024_04_14_16_39_27',]
+#ckpt_epoch=[98,]
+
+# [cTGAN, CWGANGP, VAE]
+time_stamps=[['2024_04_14_16_39_27',],['2024_04_12_14_49_29',],['2024_04_15_10_00_26',]]
+ckpt_epochs=[[98,],[333,],[None,]]
+
+

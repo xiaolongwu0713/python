@@ -1,9 +1,6 @@
 import argparse
 import sys, os
 import socket
-
-from gesture.DA.cTGAN.ctgan import LinearLrDecay
-
 if socket.gethostname() == 'workstation':
     sys.path.extend(['C:/Users/wuxiaolong/mydrive/python'])
 elif socket.gethostname() == 'LongsMac':
@@ -33,18 +30,19 @@ from gesture.DA.GAN.gan import gan, SEEG_CNN_Generator_10channels, weights_init,
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sid', default=10, type=int)
-    parser.add_argument('--fs', default=1000, type=int)
-    parser.add_argument('--wind', default=500, type=int)
-    parser.add_argument('--stride', default=100, type=int)
-    parser.add_argument('--epochs',type=int,default=500,help='number of epochs of training')
+    parser.add_argument('--cv', type=int)
     parser.add_argument('--load_path',type=str,help='The reload model path')
-    parser.add_argument('--gen_method', type=str, default='CWGANGP',help='The reload model path')
-    parser.add_argument('--selected_channels', type=str, default='Yes', help='use selected channels or not')
     opt = parser.parse_args()
     return opt
 
 args = parse_args()
-sid, fs, wind, stride, gen_method, epochs, selected_channels = args.sid, args.fs, args.wind, args.stride, args.gen_method, args.epochs, args.selected_channels
+sid = args.sid
+fs=1000
+wind=500
+stride=100
+gen_method='CWGANGP'
+epochs=500
+selected_channels='Yes'
 
 Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 seed = 20200220  # random seed to make results reproducible
@@ -97,12 +95,12 @@ else:
 
 batch_size = 32
 test_epochs, val_epochs, train_epochs, scaler = read_data_split_function(sid, fs, selected_channels=selected_channels,
-                                                                         scaler=norm_method)
+                                                                         scaler=norm_method,cv_idx=args.cv)
 X_train, y_train, X_val, y_val, X_test, y_test = windowed_data(train_epochs, val_epochs, test_epochs, wind, stride)
 total_trials = X_train.shape[0] + X_val.shape[0] + X_test.shape[0]
 
-X_train = np.concatenate((X_train, X_val), axis=0)
-y_train = np.concatenate((y_train, y_val))
+#X_train = np.concatenate((X_train, X_val), axis=0)
+#y_train = np.concatenate((y_train, y_val))
 train_set = myDataset(X_train, y_train)
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)
 one_batch = next(iter(train_loader))[0]  # torch.Size([32, 208, 500])
@@ -159,7 +157,7 @@ else:
     print(f'=> Fresh training. ')
     args.path_helper = {}  # = set_log_dir('D:/data/BaiduSyncdisk/gesture/DA/cTGAN/' + str(args.sid) + '/')
     # path_dict = {}
-    prefix = tmp_dir + 'DA/CWGANGP/sid' + str(args.sid) + '/' + timestamp + '/'
+    prefix = tmp_dir + 'DA/CWGANGP/sid' + str(args.sid) + '/cv'+str(args.cv)+'/' + timestamp + '/'
     os.makedirs(prefix)
     args.path_helper['prefix'] = prefix
 
@@ -302,7 +300,7 @@ for epoch in range(pre_epochs, pre_epochs + epochs):
         image = ToTensor()(image).unsqueeze(0)
         writer.add_image('Image/raw', image[0], global_steps)
 
-        ff = visualization([gen_data.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)], 'tSNE', labels,
+        ff = visualization([gen_data.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)], 'tSNE', ['gen','real'],
                                   display=False,epoch=epoch)
         plt.figure(ff)
         plt.savefig('del_figure2.png')

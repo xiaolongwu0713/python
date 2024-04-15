@@ -2,8 +2,6 @@ import argparse
 import sys, os
 import socket
 
-from gesture.DA.cTGAN.ctgan import LinearLrDecay
-
 if socket.gethostname() == 'workstation':
     sys.path.extend(['C:/Users/wuxiaolong/mydrive/python'])
 elif socket.gethostname() == 'LongsMac':
@@ -302,7 +300,7 @@ for epoch in range(start):
         image = ToTensor()(image).unsqueeze(0)
         writer.add_image('Image/raw', image[0], global_steps)
 
-        ff = visualization([gen_data.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)], 'tSNE', labels,
+        ff = visualization([gen_data.transpose(0, 2, 1), X_train_class0.transpose(0, 2, 1)[:304,:,:]], 'tSNE', labels,
                                   display=False,epoch=epoch)
         plt.figure(ff)
         plt.savefig('del_figure2.png')
@@ -372,7 +370,7 @@ for epoch in range(start,start+more):
     plt.figure(fig)
     plt.title('2 generated channels' + '; epoch:' + str(epoch) + '.')
     plt.savefig('del_figure.png')
-    image = PIL.Image.open('del_figure.png')
+    image = PIL.Image.open('../cTGAN/del_figure.png')
     image = ToTensor()(image).unsqueeze(0)
     writer.add_image('Image/raw', image[0], global_steps)
 
@@ -380,7 +378,7 @@ for epoch in range(start,start+more):
                        display=False, epoch=epoch)
     plt.figure(ff)
     plt.savefig('del_figure2.png')
-    image2 = PIL.Image.open('del_figure2.png')
+    image2 = PIL.Image.open('../cTGAN/del_figure2.png')
     image2 = ToTensor()(image2).unsqueeze(0)
     writer.add_image('Image/tSNE', image2[0], global_steps)
 
