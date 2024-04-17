@@ -72,12 +72,8 @@ else:
     print_this='Argument parse error!!!!'
 print(print_this)
 
-class_number=5
-fs=1000
-if repetition:
-    result_dir=result_dir+'selection/gumbel/'+'P'+str(sid)+'/'+str(channel_to_select)+'channels'+'_'+str(repetition)+'/'
-else:
-    result_dir = result_dir + 'selection/gumbel/' + 'P' + str(sid) + '/' + str(channel_to_select) + 'channels'+ '/'
+
+result_dir = result_dir + 'selection/gumbel/' + 'P' + str(sid) + '/' + str(channel_to_select) + 'channels'+ '/'
 if not os.path.exists(result_dir):
     os.makedirs(result_dir)
 print(result_dir)
@@ -182,7 +178,10 @@ if 1==0:
     y_train=np.asarray(y_train)
     y_train=np.reshape(y_train,(-1,1)) # (5, 270)
 
-
+class_number=5
+fs=1000
+wind=500
+stride=100
 test_epochs, val_epochs, train_epochs, scaler = read_data_split_function(sid, fs,scaler='std',cv_idx=cv)
 X_train, y_train, X_val, y_val, X_test, y_test = windowed_data(train_epochs, val_epochs, test_epochs, wind, stride)
 train_set=myDataset(X_train,y_train)
