@@ -100,6 +100,7 @@ def main():
     args.grow_steps = [0, 0]
 
     # define network
+    # depth is layer numbers
     gen_net = Generator(seq_len=500, channels=10, num_classes=5, latent_dim=args.latent_dim, data_embed_dim=10,
                         label_embed_dim=10 ,depth=3, num_heads=5, forward_drop_rate=0.5, attn_drop_rate=0.5)
     dis_net = Discriminator(in_channels=10, patch_size=1, data_emb_size=50, label_emb_size=10, seq_length = 500, depth=3, n_classes=5)

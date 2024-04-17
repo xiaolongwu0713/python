@@ -34,7 +34,7 @@ class Generator(nn.Module):
                  forward_drop_p=self.forward_drop_rate
                 )
 
-        self.deconv = nn.Sequential(
+        self.conv = nn.Sequential(
             nn.Conv2d(self.data_embed_dim, self.channels, 1, 1, 0)
         )
 
@@ -84,7 +84,7 @@ class Generator(nn.Module):
         H, W = 1, self.seq_len
         x = self.blocks(x)
         x = x.reshape(x.shape[0], 1, x.shape[1], x.shape[2])
-        output = self.deconv(x.permute(0, 3, 1, 2)) # torch.Size([32, 10, 1, 500])
+        output = self.conv(x.permute(0, 3, 1, 2)) # torch.Size([32, 10, 1, 500])
 
         #output=output.unsqueeze(2)
         #tmp=[]
@@ -96,6 +96,8 @@ class Generator(nn.Module):
         return output # torch.Size([32, 10, 1, 500])
 
 
+
+# one layer: consists of two sub-layers
 class Gen_TransformerEncoderBlock(nn.Sequential):
     def __init__(self,
                  emb_size,
@@ -134,19 +136,25 @@ class MultiHeadAttention(nn.Module):
         self.projection = nn.Linear(emb_size, emb_size)
 
     def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
+        # w_q
         queries = rearrange(self.queries(x), "b n (h d) -> b h n d", h=self.num_heads)
+        # w_k
         keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.num_heads)
+        # w_v
         values = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.num_heads)
-        energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys)  # batch, num_heads, query_len, key_len
+        # score = query * key
+        score = torch.einsum('bhqd, bhkd -> bhqk', queries, keys)  # batch, num_heads, query_len, key_len
         if mask is not None:
             fill_value = torch.finfo(torch.float32).min
-            energy.mask_fill(~mask, fill_value)
+            score.mask_fill(~mask, fill_value)
 
         scaling = self.emb_size ** (1 / 2)
-        att = F.softmax(energy / scaling, dim=-1)
+        att = F.softmax(score / scaling, dim=-1)
         att = self.att_drop(att)
         out = torch.einsum('bhal, bhlv -> bhav ', att, values)
+        # concatenate all heads
         out = rearrange(out, "b h n d -> b n (h d)")
+        # self.projection: w_o
         out = self.projection(out)
         return out
 
@@ -226,19 +234,20 @@ class PatchEmbedding_Linear(nn.Module):
         super().__init__()
         #change the conv2d parameters here
         self.projection = nn.Sequential(
-            Rearrange('b c (h s1) (w s2) -> b (h w) (s1 s2 c)',s1 = 1, s2 = patch_size),
-            nn.Linear(patch_size*in_channels, emb_size)
+            Rearrange('b c (h s1) (w s2) -> b (h w) (s1 s2 c)',s1 = 1, s2 = patch_size), # torch.Size([32, 10, 1, 500])-->torch.Size([32, 500, 10])
+            nn.Linear(patch_size*in_channels, emb_size) # emb_size=50
         )
+        # same as class token in ViT
         self.cls_token = nn.Parameter(torch.randn(1, 1, emb_size))
         self.positions = nn.Parameter(torch.randn((seq_length // patch_size) + 1, emb_size))
 
 
     def forward(self, x:Tensor) ->Tensor:
         b, _, _, _ = x.shape
-        x = self.projection(x)
-        cls_tokens = repeat(self.cls_token, '() n e -> b n e', b=b)
+        x = self.projection(x) # -->torch.Size([32, 500, 50])
+        cls_tokens = repeat(self.cls_token, '() n e -> b n e', b=b) #(1,1,50)->(32,1,50)
         #prepend the cls token to the input
-        x = torch.cat([cls_tokens, x], dim=1)
+        x = torch.cat([cls_tokens, x], dim=1) #-->torch.Size([32, 501, 50])
         # position
         x += self.positions
         return x
