@@ -11,6 +11,7 @@ elif socket.gethostname() == 'DESKTOP-NP9A9VI':
 elif socket.gethostname() == 'Long': # Yoga
     sys.path.extend(['D:/mydrive/python/'])
 
+from gesture.utils import read_data_split_function, windowed_data
 from gesture.channel_selection.utils import get_selected_channel_gumbel
 from gesture.config import *
 import sys
@@ -29,7 +30,7 @@ from torch.optim import lr_scheduler
 from gesture.models.deepmodel import deepnet,deepnet_resnet
 #from example.gumbelSelection.ChannelSelection.models import MSFBCNN
 from gesture.models.selectionModels_gumble import selectionNet
-
+from pre_all import running_from_IDE, running_from_CMD
 from gesture.myskorch import on_epoch_begin_callback, on_batch_end_callback
 from gesture.preprocess.chn_settings import get_channel_setting
 
@@ -40,16 +41,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 cuda = torch.cuda.is_available()  # check if GPU is available, chooses to use it if True;
 device = 'cuda' if cuda else 'cpu'
 
-#if 'PYTHONPATH' in os.environ and 'PyCharm' in os.environ['PYTHONPATH']:
-if os.environ.get('PYCHARM_HOSTED'):
-    running_from_IDE=True
-    running_from_CMD = False
-    print("Running from IDE.")
-else:
-    running_from_CMD = True
-    running_from_IDE = False
-    print("Running from CMD.")
-
 if socket.gethostname() == 'workstation' or socket.gethostname() == 'DESKTOP-NP9A9VI' or socket.gethostname() == 'Long':
     if running_from_CMD: # run from cmd on workstation
         sid = int(sys.argv[1])
@@ -59,20 +50,19 @@ if socket.gethostname() == 'workstation' or socket.gethostname() == 'DESKTOP-NP9
             channel_to_select=False
             pass
         try:
-            repetition = int(sys.argv[3])
+            cv = int(sys.argv[3])
         except IndexError:
-            repetition = False
             pass
-        if channel_to_select and repetition:
-            print_this = 'CMD: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(
-                channel_to_select) + '; ' + 'Repitition: ' + str(repetition) + ';'
-        elif channel_to_select:
-            print_this = 'CMD: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; '
+        repetition = False
+        if channel_to_select and cv:
+            print_this = 'CMD: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; ' + 'CV: ' + str(cv) + ';'
+
     elif running_from_IDE: # run from IDE on Yoga
         sid = 10  # 4
         channel_to_select=10
+        cv=1
         repetition=False
-        print_this = 'IDE On Workstation: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; '
+        print_this = 'IDE: Sid: ' + str(sid) + '; ' + 'Channel to Select: ' + str(channel_to_select) + '; '+ 'CV: ' + str(cv) + ';'
 elif socket.gethostname() =='LongsMac': # only run from IDE on Mac
     print("Local debug.")
     sid=10 #4
@@ -91,108 +81,115 @@ else:
 if not os.path.exists(result_dir):
     os.makedirs(result_dir)
 print(result_dir)
-loadPath = data_dir+'preprocessing'+'/P'+str(sid)+'/preprocessing2.mat'
-mat=hdf5storage.loadmat(loadPath)
-data = mat['Datacell']
-good_channels=mat['good_channels']
-channelNum=len(np.squeeze(good_channels))
-data=np.concatenate((data[0,0],data[0,1]),0)
-del mat
-# standardization
-# no effect. why?
-if 1==1:
-    chn_data=data[:,-3:]
-    data=data[:,:-3] # shape: (1052092, 209)
-    scaler = StandardScaler()
-    scaler.fit(data)
-    data=scaler.transform((data))
-    data=np.concatenate((data,chn_data),axis=1)
 
-# stim0 is trigger channel, stim1 is trigger position calculated from EMG signal.
-chn_names=np.append(["seeg"]*channelNum,["emg0","emg1","stim_trigger","stim_emg"])
-chn_types=np.append(["seeg"]*channelNum,["emg","emg","stim","stim"])
-info = mne.create_info(ch_names=list(chn_names), ch_types=list(chn_types), sfreq=fs)
-raw = mne.io.RawArray(data.transpose(), info)
+if 1==0:
+    loadPath = data_dir+'preprocessing'+'/P'+str(sid)+'/preprocessing2.mat'
+    mat=hdf5storage.loadmat(loadPath)
+    data = mat['Datacell']
+    good_channels=mat['good_channels']
+    channelNum=len(np.squeeze(good_channels))
+    data=np.concatenate((data[0,0],data[0,1]),0)
+    del mat
+    # standardization
+    # no effect. why?
+    if 1==1:
+        chn_data=data[:,-3:]
+        data=data[:,:-3] # shape: (1052092, 209)
+        scaler = StandardScaler()
+        scaler.fit(data)
+        data=scaler.transform((data))
+        data=np.concatenate((data,chn_data),axis=1)
 
-# gesture/events type: 1,2,3,4,5
-events0 = mne.find_events(raw, stim_channel='stim_trigger')
-events1 = mne.find_events(raw, stim_channel='stim_emg')
-# events number should start from 0: 0,1,2,3,4, instead of 1,2,3,4,5
-events0=events0-[0,0,1]
-events1=events1-[0,0,1]
+    # stim0 is trigger channel, stim1 is trigger position calculated from EMG signal.
+    chn_names=np.append(["seeg"]*channelNum,["emg0","emg1","stim_trigger","stim_emg"])
+    chn_types=np.append(["seeg"]*channelNum,["emg","emg","stim","stim"])
+    info = mne.create_info(ch_names=list(chn_names), ch_types=list(chn_types), sfreq=fs)
+    raw = mne.io.RawArray(data.transpose(), info)
 
-#print(events[:5])  # show the first 5
-# Epoch from 4s before(idle) until 4s after(movement) stim1.
-raw=raw.pick(["seeg"])
-epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
-# or epoch from 0s to 4s which only contain movement data.
-# epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
+    # gesture/events type: 1,2,3,4,5
+    events0 = mne.find_events(raw, stim_channel='stim_trigger')
+    events1 = mne.find_events(raw, stim_channel='stim_emg')
+    # events number should start from 0: 0,1,2,3,4, instead of 1,2,3,4,5
+    events0=events0-[0,0,1]
+    events1=events1-[0,0,1]
 
-epoch1=epochs['0'].get_data() # 20 trials. 8001 time points per trial for 8s.
-epoch2=epochs['1'].get_data()
-epoch3=epochs['2'].get_data()
-epoch4=epochs['3'].get_data()
-epoch5=epochs['4'].get_data()
-list_of_epochs=[epoch1,epoch2,epoch3,epoch4,epoch5]
-#total_len=list_of_epochs[0].shape[2]
+    #print(events[:5])  # show the first 5
+    # Epoch from 4s before(idle) until 4s after(movement) stim1.
+    raw=raw.pick(["seeg"])
+    epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
+    # or epoch from 0s to 4s which only contain movement data.
+    # epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
 
-# randomly select 2 trials from each of five classes as the testing and validating dataset
-trial_number=[list(range(epochi.shape[0])) for epochi in list_of_epochs] #[ [0,1,2,...19],[0,1,2...19],... ]
-test_trials=[random.sample(epochi, 2) for epochi in trial_number]
-# len(test_trials[0]) # test trials number
-trial_number_left=[np.setdiff1d(trial_number[i],test_trials[i]) for i in range(class_number)]
+    epoch1=epochs['0'].get_data() # 20 trials. 8001 time points per trial for 8s.
+    epoch2=epochs['1'].get_data()
+    epoch3=epochs['2'].get_data()
+    epoch4=epochs['3'].get_data()
+    epoch5=epochs['4'].get_data()
+    list_of_epochs=[epoch1,epoch2,epoch3,epoch4,epoch5]
+    del epochs
 
-val_trials=[random.sample(list(epochi), 2) for epochi in trial_number_left]
-train_trials=[np.setdiff1d(trial_number_left[i],val_trials[i]).tolist() for i in range(class_number)]
+    # randomly select 2 trials from each of five classes as the testing and validating dataset
+    trial_number=[list(range(epochi.shape[0])) for epochi in list_of_epochs] #[ [0,1,2,...19],[0,1,2...19],... ]
+    test_trials=[random.sample(epochi, 2) for epochi in trial_number]
+    # len(test_trials[0]) # test trials number
+    trial_number_left=[np.setdiff1d(trial_number[i],test_trials[i]) for i in range(class_number)]
 
-# no missing trials
-assert [sorted(test_trials[i]+val_trials[i]+train_trials[i]) for i in range(class_number)] == trial_number
+    val_trials=[random.sample(list(epochi), 2) for epochi in trial_number_left]
+    train_trials=[np.setdiff1d(trial_number_left[i],val_trials[i]).tolist() for i in range(class_number)]
 
-test_epochs=[epochi[test_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)] # [ epoch0,epoch1,epch2,epoch3,epoch4 ]
-val_epochs=[epochi[val_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)]
-train_epochs=[epochi[train_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)]
+    # no missing trials
+    assert [sorted(test_trials[i]+val_trials[i]+train_trials[i]) for i in range(class_number)] == trial_number
+
+    test_epochs=[epochi[test_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)] # [ epoch0,epoch1,epch2,epoch3,epoch4 ]
+    val_epochs=[epochi[val_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)]
+    train_epochs=[epochi[train_trials[clas],:,:] for clas,epochi in enumerate(list_of_epochs)]
 
 
-wind=500
-stride=50
-X_train=[]
-y_train=[]
-X_val=[]
-y_val=[]
-X_test=[]
-y_test=[]
+    wind=500
+    stride=150
+    X_train=[]
+    y_train=[]
+    X_val=[]
+    y_val=[]
+    X_test=[]
+    y_test=[]
 
-for clas, epochi in enumerate(test_epochs):
-    Xi,y=slide_epochs(epochi,clas,wind, stride)
-    assert Xi.shape[0]==len(y)
-    X_test.append(Xi)
-    y_test.append(y)
-X_test=np.concatenate(X_test,axis=0) # (1300, 63, 500)
-y_test=np.asarray(y_test)
-y_test=np.reshape(y_test,(-1,1)) # (5, 270)
+    for clas, epochi in enumerate(test_epochs):
+        Xi,y=slide_epochs(epochi,clas,wind, stride)
+        assert Xi.shape[0]==len(y)
+        X_test.append(Xi)
+        y_test.append(y)
+    X_test=np.concatenate(X_test,axis=0) # (710, 208, 500)
+    y_test=np.asarray(y_test)
+    y_test=np.reshape(y_test,(-1,1)) # (5, 270)
 
-for clas, epochi in enumerate(val_epochs):
-    Xi,y=slide_epochs(epochi,clas,wind, stride)
-    assert Xi.shape[0]==len(y)
-    X_val.append(Xi)
-    y_val.append(y)
-X_val=np.concatenate(X_val,axis=0) # (1300, 63, 500)
-y_val=np.asarray(y_val)
-y_val=np.reshape(y_val,(-1,1)) # (5, 270)
+    for clas, epochi in enumerate(val_epochs):
+        Xi,y=slide_epochs(epochi,clas,wind, stride)
+        assert Xi.shape[0]==len(y)
+        X_val.append(Xi)
+        y_val.append(y)
+    X_val=np.concatenate(X_val,axis=0) # (710, 208, 500)
+    y_val=np.asarray(y_val)
+    y_val=np.reshape(y_val,(-1,1)) #
 
-for clas, epochi in enumerate(train_epochs):
-    Xi,y=slide_epochs(epochi,clas,wind, stride)
-    assert Xi.shape[0]==len(y)
-    X_train.append(Xi)
-    y_train.append(y)
-X_train=np.concatenate(X_train,axis=0) # (1300, 63, 500)
-y_train=np.asarray(y_train)
-y_train=np.reshape(y_train,(-1,1)) # (5, 270)
-chn_num=X_train.shape[1]
+    for clas, epochi in enumerate(train_epochs):
+        Xi,y=slide_epochs(epochi,clas,wind, stride)
+        assert Xi.shape[0]==len(y)
+        X_train.append(Xi)
+        y_train.append(y)
+    del train_epochs
+    X_train=np.concatenate(X_train,axis=0) # (5680, 208, 500)
+    y_train=np.asarray(y_train)
+    y_train=np.reshape(y_train,(-1,1)) # (5, 270)
 
+
+test_epochs, val_epochs, train_epochs, scaler = read_data_split_function(sid, fs,scaler='std',cv_idx=cv)
+X_train, y_train, X_val, y_val, X_test, y_test = windowed_data(train_epochs, val_epochs, test_epochs, wind, stride)
 train_set=myDataset(X_train,y_train)
 val_set=myDataset(X_val,y_val)
 test_set=myDataset(X_test,y_test)
+chn_num=X_train.shape[1]
+total_trials = X_train.shape[0] + X_val.shape[0] + X_test.shape[0]
 
 batch_size = 32
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)

@@ -4,8 +4,8 @@ import torch
 from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
-from gesture.models.deepmodel import deepnet
-from example.gumbelSelection.ChannelSelection.models import  MSFBCNN
+from gesture.models.deepmodel import deepnet, MSFBCNN
+#from example.gumbelSelection.ChannelSelection.models import
 
 limit_a, limit_b, epsilon = -.1, 1.1, 1e-6
 class SelectionLayer(nn.Module):

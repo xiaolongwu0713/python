@@ -728,5 +728,87 @@ class TSception2(nn.Module):
         return pred
 
 
+class MSFBCNN(nn.Module):
+    def __init__(self, input_dim, output_dim, FT=10):
+        super(MSFBCNN, self).__init__()
+        self.T = input_dim[1]
+        self.FT = FT
+        self.D = 1
+        self.FS = self.FT * self.D
+        self.C = input_dim[0]
+        self.output_dim = output_dim
+
+        # Parallel temporal convolutions
+        self.conv1a = nn.Conv2d(1, self.FT, (1, 65), padding=(0, 32), bias=False)
+        self.conv1b = nn.Conv2d(1, self.FT, (1, 41), padding=(0, 20), bias=False)
+        self.conv1c = nn.Conv2d(1, self.FT, (1, 27), padding=(0, 13), bias=False)
+        self.conv1d = nn.Conv2d(1, self.FT, (1, 17), padding=(0, 8), bias=False)
+
+        self.batchnorm1 = nn.BatchNorm2d(4 * self.FT, False)
+
+        # Spatial convolution
+        self.conv2 = nn.Conv2d(4 * self.FT, self.FS, (self.C, 1), padding=(0, 0), groups=1, bias=False)
+        self.batchnorm2 = nn.BatchNorm2d(self.FS, False)
+
+        # Temporal average pooling
+        self.pooling2 = nn.AvgPool2d(kernel_size=(1, 75), stride=(1, 15), padding=(0, 0))
+
+        self.drop = nn.Dropout(0.5)
+
+        result = self.test_dim(torch.ones(1, 1, self.C, self.T))
+        # Classification
+        # self.fc1 = nn.Linear(self.FS*math.ceil(1+(self.T-75)/15), self.output_dim)
+        self.fc1 = nn.Linear(result.shape[1], self.output_dim)
+
+    def test_dim(self, x):
+        # Layer 1
+        x1 = self.conv1a(x)
+        x2 = self.conv1b(x)
+        x3 = self.conv1c(x)
+        x4 = self.conv1d(x)
+
+        x = torch.cat([x1, x2, x3, x4], dim=1)
+        x = self.batchnorm1(x)
+
+        # Layer 2
+        x = torch.pow(self.batchnorm2(self.conv2(x)), 2)
+        x = self.pooling2(x)
+        x = torch.log(x)
+        x = self.drop(x)
+
+        # FC Layer
+        x = x.view(-1, self.num_flat_features(x))
+        return x
+
+    def forward(self, x):
+        # ensure 4-D for input as (batch, channel_number, time)
+        if len(x.shape) < 4:
+            x = torch.unsqueeze(x, dim=1)
+        # Layer 1
+        x1 = self.conv1a(x)
+        x2 = self.conv1b(x)
+        x3 = self.conv1c(x)
+        x4 = self.conv1d(x)
+
+        x = torch.cat([x1, x2, x3, x4], dim=1)
+        x = self.batchnorm1(x)
+
+        # Layer 2
+        x = torch.pow(self.batchnorm2(self.conv2(x)), 2)
+        x = self.pooling2(x)
+        x = torch.log(x)
+        x = self.drop(x)
+
+        # FC Layer
+        x = x.view(-1, self.num_flat_features(x))
+        x = self.fc1(x)
+        return x
+
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
 
 
