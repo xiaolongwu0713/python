@@ -60,9 +60,9 @@ if running_from_CMD: # run from cmd on workstation
         elif train_mode=='original':
             cv = int(sys.argv[4])
 else: # run from IDE
-    sid=10
+    sid=2
     model_name = 'deepnet'
-    train_mode='DA' #'DA'/original/'selected_channels'
+    train_mode='original' #'DA'/original/'selected_channels'
     method='cTGAN' # 'NI'/'VAE'/'CWGANGP'/
     cv=1
 class_number=5

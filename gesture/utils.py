@@ -151,16 +151,24 @@ def noise_injection_epoch_list(train_epochs,std_scale):
         train_epochs_NI.append(tmp)
     return train_epochs_NI
 
+def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,tmin=0,tmax=5):
+    # read data
+    data, channelNum = read_data_(sid)  # data: (1052092, 212)
+    data, scalerr = norm_data(data, scaler=scaler)
+    epochs = gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG,tmin=tmin,tmax=tmax)
+    return epochs
 
-def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None):
+def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False):
     # read data
     data,channelNum=read_data_(sid) # data: (1052092, 212)
     data, scalerr = norm_data(data, scaler=scaler)
-    epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels)
+    epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG)
     test_epochs, val_epochs, train_epochs=data_split(epochs,cv_idx=cv_idx)
     return test_epochs, val_epochs, train_epochs,scalerr
 
-def gen_epoch(data,fs,channelNum,selected_channels=None):
+# rest(4 s)--> cue (1s) ---> movement (5 s)
+# tmin, tmax=0,5;
+def gen_epoch(data,fs,channelNum,selected_channels=None, EMG=False,tmin=0,tmax=5):
     chn_names=np.append(["seeg"]*channelNum,["emg0","emg1","stim_trigger","stim_emg"])
     chn_types=np.append(["seeg"]*channelNum,["emg","emg","stim","stim"])
     info = mne.create_info(ch_names=list(chn_names), ch_types=list(chn_types), sfreq=fs)
@@ -175,7 +183,11 @@ def gen_epoch(data,fs,channelNum,selected_channels=None):
 
     #print(events[:5])  # show the first 5
     # Epoch from 4s before(idle) until 4s after(movement) stim1.
-    raw=raw.pick(["seeg"])
+    if EMG:
+        picks=["seeg","emg"]
+    else:
+        picks=["seeg"]
+    raw=raw.pick(picks) #raw=raw.pick(["seeg"])
 
     if selected_channels:
         raw = raw.pick(selected_channels)
@@ -183,7 +195,7 @@ def gen_epoch(data,fs,channelNum,selected_channels=None):
     # stim0 is trigger channel, stim1 is trigger position calculated from EMG signal.
     # or epoch from 0s to 4s which only contain movement data.
     # epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
-    epochs = mne.Epochs(raw, events1, tmin=0, tmax=4, baseline=None)
+    epochs = mne.Epochs(raw, events1, tmin=tmin, tmax=tmax, baseline=None)
     return epochs
 
 def read_data_(sid):
@@ -199,8 +211,9 @@ def read_data_(sid):
     del mat
     return data,channelNum
 
-    # standardization
-    # StandardScaler will not clamp data between -1 and 1, but MinMaxScaler will [0,1].
+# standardization
+# StandardScaler will not clamp data between -1 and 1, but MinMaxScaler will [0,1].
+# 4[2*emg + 1*trigger_indexes + 1*emg_trigger]
 def norm_data(data,scaler='std'):
     if scaler=='std':
         print("Standard scaler.")

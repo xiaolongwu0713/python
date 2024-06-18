@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from matplotlib import pyplot as plt
 from torch.optim import lr_scheduler
 from gesture.models.stg.models import STGClassificationModel, STGRegressionModel, MLPClassificationModel, MLPRegressionModel, STGCoxModel, MLPCoxModel, L1RegressionModel, SoftThreshRegressionModel, L1GateRegressionModel
 from gesture.models.stg.utils import get_optimizer, as_tensor, as_float, as_numpy, as_cpu, SimpleDataset, FastTensorDataLoader, probe_infnan
@@ -54,7 +55,7 @@ def _standard_truncnorm_sample(lower_bound, upper_bound, sample_shape=torch.Size
 class STG(object):
     def __init__(self,chn_num, class_num, wind, task_meta, patients=10, activation='relu', sigma=0.5, lam=0.1, lam_schedule=0, device='device',
                 optimizer='Adam', learning_rate=0.01,  batch_size=100, freeze_onward=None, feature_selection=True, weight_decay=1e-3,
-                task_type='classification', report_maps=False, random_state=1, extra_args=None):
+                task_type='classification', report_maps=False, random_state=1, extra_args=None,plot_probs=True):
         self.batch_size = batch_size
         self.activation = activation
         self.device = device
@@ -79,6 +80,10 @@ class STG(object):
         self._model = self._model.double()
         self._optimizer = get_optimizer(optimizer, self._model, lr=learning_rate, weight_decay=weight_decay)
         self.lr_scheduler = lr_scheduler.StepLR(self._optimizer, step_size=100, gamma=0.1)
+        self.plot_probs=plot_probs
+        # if self.plot_probs:
+        #     import matplotlib
+        #     matplotlib.use('TkAgg')
     
     def get_device(self, device):
         if device == "cpu":
@@ -169,6 +174,11 @@ class STG(object):
         if meters is None:
             meters = GroupMeters()
 
+        if self.plot_probs:
+            #plt.ion()
+            fig,ax=plt.subplots()
+            #plt.show()
+
         for epoch in range(1, 1 + nr_epochs):
             self._model.set_epoch_num(epoch)
             #print('lambda:'+str(self._model.get_lam(epoch)))
@@ -179,6 +189,7 @@ class STG(object):
                 print("Selection Frozen!!!")
             _, epoch_loss=self.train_epoch(data_loader, meters=meters)
             self.train_loss.append(epoch_loss)
+
             if verbose and epoch % print_interval == 0:
                 # print("Validation.")
                 _, val_acc = self.validate(val_data_loader, self.metric, meters)
@@ -215,8 +226,16 @@ class STG(object):
                     patient = patient - 1
                     if patient==0:
                         break
-            self.result_prob.append(self.get_gates(mode='prob'))
-            self.result_raw.append(self.get_gates(mode='raw'))
+
+            prob=self.get_gates(mode='prob')
+            raw=self.get_gates(mode='raw')
+            self.result_prob.append(prob)
+            self.result_raw.append(raw)
+            if self.plot_probs:
+                ax.clear()
+                ax.imshow(np.asarray(self.result_prob), aspect='auto')
+                fig.savefig('probs_vs_epochs')
+                ax.clear()
             #self.lr_scheduler.step()
         self.savepath = self.result_dir + 'checkpoint' + str(epoch) + '.pth'
         torch.save(self.model_state, self.savepath)

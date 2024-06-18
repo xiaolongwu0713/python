@@ -13,7 +13,7 @@ plott=False
 
 sf=1024
 type='SEEG' #'SEEG/ECoG
-sid=1 # SEEG 1/2
+sid=2 # SEEG 1/2
 
 eeg_file=data_dir+'raw/'+type+str(sid)+'_*/EEG.edf' # SEEG1_datetime
 eeg_file=os.path.normpath(glob.glob(eeg_file)[0])

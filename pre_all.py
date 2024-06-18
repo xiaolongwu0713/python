@@ -7,10 +7,6 @@ from util import my_timer
 import sys,os
 sys.dont_write_bytecode = True
 
-import matplotlib as mpl
-mpl.rcParams['pdf.fonttype']=42
-mpl.use('Qt5Agg') # prevent fig freezing
-
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace is None:
     debugging=False

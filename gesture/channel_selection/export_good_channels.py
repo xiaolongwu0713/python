@@ -6,7 +6,6 @@ import os, re
 import matplotlib.pyplot as plt
 from gesture.config import *
 
-
 info_file=info_dir+'Info.npy'
 info=np.load(info_file,allow_pickle=True)
 good_channels={}

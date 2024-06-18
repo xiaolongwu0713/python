@@ -12,7 +12,7 @@ do
   do
 
     network='deepnet'
-    train_mode='DA' #'original'
+    train_mode='original' #'original'
 
     if [ $train_mode = 'original' ]
     then

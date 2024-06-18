@@ -94,6 +94,7 @@ class deepnet_rnn(nn.Module):
 
 
 #model = deepnet(n_chans,n_classes,input_window_samples=input_window_samples,final_conv_length='auto',)
+# standard scaler is very important for the deepnet model
 class deepnet(nn.Module):
     def __init__(self,chn_num,class_num,wind):
         super().__init__()

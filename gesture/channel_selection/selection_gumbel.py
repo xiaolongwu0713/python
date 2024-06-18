@@ -181,7 +181,7 @@ if 1==0:
 class_number=5
 fs=1000
 wind=500
-stride=100
+stride=200
 test_epochs, val_epochs, train_epochs, scaler = read_data_split_function(sid, fs,scaler='std',cv_idx=cv)
 X_train, y_train, X_val, y_val, X_test, y_test = windowed_data(train_epochs, val_epochs, test_epochs, wind, stride)
 train_set=myDataset(X_train,y_train)
@@ -307,23 +307,22 @@ def train_epoch(epoch, net, optimizer):
 def evaluate_epoch(epoch, net):
     running_loss = 0.0
     running_corrects = 0
+    net.eval()
+    # print("Validating...")
     with torch.no_grad():
-        net.eval()
-        # print("Validating...")
-        with torch.no_grad():
-            for _, (val_x, val_y) in enumerate(val_loader):
-                if (cuda):
-                    val_x = val_x.float().cuda()
-                    # val_y = val_y.float().cuda()
-                else:
-                    val_x = val_x.float()
-                    # val_y = val_y.float()
-                outputs = net(val_x)
-                # _, preds = torch.max(outputs, 1)
-                preds = outputs.argmax(dim=1, keepdim=True)
+        for _, (val_x, val_y) in enumerate(val_loader):
+            if (cuda):
+                val_x = val_x.float().cuda()
+                # val_y = val_y.float().cuda()
+            else:
+                val_x = val_x.float()
+                # val_y = val_y.float()
+            outputs = net(val_x)
+            # _, preds = torch.max(outputs, 1)
+            preds = outputs.argmax(dim=1, keepdim=True)
 
-                running_corrects += torch.sum(preds.cpu().squeeze() == val_y.squeeze())
-        val_acc = running_corrects.double() / val_size
+            running_corrects += torch.sum(preds.cpu().squeeze() == val_y.squeeze())
+    val_acc = running_corrects.double() / val_size
     return val_acc
 
 def testing():
@@ -370,16 +369,11 @@ for epoch in range(epoch_num):
     # train
     train_acc, epoch_loss=train_epoch(epoch, net, optimizer)
     epoch_score[epoch].append(train_acc)
-    # evaluate
-    val_acc=evaluate_epoch(epoch, net)
-    epoch_score[epoch].append(val_acc)
-
 
     epoch_threshold=net.selection_layer.thresh
     epoch_penalty = net.selection_layer.H
     print("Threshold: "+str(epoch_threshold)+".")
     print("Panelty: " + str(epoch_penalty) + ".")
-    print("Traing acc: %.2f; Evaluating acc: %.2f" % (train_acc, val_acc))
 
     hi, sel, probas = net.monitor()
     H[epoch].append(hi.detach().cpu().numpy()) # entropy, shape:(10,);
@@ -390,22 +384,12 @@ for epoch in range(epoch_num):
     # ax.clear()
     mean_entropy = torch.mean(hi.data)
     print("Entropy: "+ str(mean_entropy)+'.')
-    if mean_entropy<limit_entropy:
-        break
 
-epoch_score_no_selection=[] # a list of lists
-net.set_freeze(True)
-# training the decoding network
-for epoch in range(epoch_num):
-    epoch_score_no_selection.append([])
-    # train
-    train_acc, epoch_loss = train_epoch(epoch, net, optimizer)
-    epoch_score_no_selection[epoch].append(train_acc)
     # evaluate
-    val_acc = evaluate_epoch(epoch, net)
-    epoch_score_no_selection[epoch].append(val_acc)
-    print("Training accuracy: "+str(train_acc)+';')
-    print("Evaluating accuracy: "+ str(val_acc)+';')
+    val_acc=evaluate_epoch(epoch, net)
+    epoch_score[epoch].append(val_acc)
+    print("Traing acc: %.2f; Evaluating acc: %.2f" % (train_acc, val_acc))
+
     if epoch == 0:
         best_acc = val_acc
         patient = patients
@@ -427,18 +411,61 @@ for epoch in range(epoch_num):
             }
         else:
             patient = patient - 1
-            print("Patient: "+str(patient)+'.')
+            print("Patient: " + str(patient) + '.')
             if patient == 0:
                 savepath = result_dir + 'checkpoint_' + str(epoch) + '.pth'
                 torch.save(state, savepath)
-                break
+                if mean_entropy < limit_entropy:
+                    break
+
+
+if 0==1:
+    epoch_score_no_selection=[] # a list of lists
+    net.set_freeze(True)
+    # training the decoding network
+    for epoch in range(epoch_num):
+        epoch_score_no_selection.append([])
+        # train
+        train_acc, epoch_loss = train_epoch(epoch, net, optimizer)
+        epoch_score_no_selection[epoch].append(train_acc)
+        # evaluate
+        val_acc = evaluate_epoch(epoch, net)
+        epoch_score_no_selection[epoch].append(val_acc)
+        print("Training accuracy: "+str(train_acc)+';')
+        print("Evaluating accuracy: "+ str(val_acc)+';')
+        if epoch == 0:
+            best_acc = val_acc
+            patient = patients
+            state = {
+                'net': net.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'epoch': epoch,
+                'loss': epoch_loss
+            }
+        else:
+            if val_acc > best_acc:
+                best_acc = val_acc
+                patient = patients
+                state = {
+                    'net': net.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'epoch': epoch,
+                    'loss': epoch_loss
+                }
+            else:
+                patient = patient - 1
+                print("Patient: "+str(patient)+'.')
+                if patient == 0:
+                    savepath = result_dir + 'checkpoint_' + str(epoch) + '.pth'
+                    torch.save(state, savepath)
+                    break
 
 test_acc=testing()
 print("Testing accuracy: "+str(test_acc)+'.')
 
 score_all={}
 score_all['epoch_score']=epoch_score
-score_all['epoch_score_no_selection']=epoch_score_no_selection
+#score_all['epoch_score_no_selection']=epoch_score_no_selection
 score_all['test_acc']=test_acc
 filename=result_dir+'score_all.npy'
 np.save(filename, score_all)

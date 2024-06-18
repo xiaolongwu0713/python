@@ -20,7 +20,9 @@ selection_result = result_dir + 'selection/gumbel/' + 'P' + str(sid) + '/' + str
 # result_dir='/Users/long/OneDrive/share/selection/gumbel/3/P10'
 scores_all = np.load(selection_result + 'score_all.npy', allow_pickle=True).item()  # (train acc, val acc)
 epoch_score=scores_all['epoch_score']
-epoch_score_no_selection=scores_all['epoch_score_no_selection']
+train_acc=[i[0] for i in epoch_score]
+eval_acc=[i[1] for i in epoch_score]
+#epoch_score_no_selection=scores_all['epoch_score_no_selection']
 test_acc=scores_all['test_acc']
 
 h = np.load(selection_result + 'HH.npy')
@@ -32,17 +34,11 @@ mean_entropy = np.mean(h, axis=1)
 
 fig, ax=plt.subplots()
 x1=range(len(epoch_score))
-train_acc=[i[0] for i in epoch_score]
-eval_acc=[i[1] for i in epoch_score]
+
 ax.plot(x1, train_acc, color='red')
 ax.plot(x1, eval_acc, color='blue')
 ax.plot(x1, mean_entropy, color='yellow')
-
-train_acc2=[i[0] for i in epoch_score_no_selection]
-eval_acc2=[i[1] for i in epoch_score_no_selection]
-x2=[i+len(x1)+1 for i in range(len(train_acc2))]
-ax.plot(x2, train_acc2, color='orchid')
-ax.plot(x2, eval_acc2, color='lightblue')
+ax.legend(['train acc','val acc','entropy'])
 
 filename=selection_result+'training_result.pdf'
 fig.savefig(filename)

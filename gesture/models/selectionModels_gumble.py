@@ -4,6 +4,8 @@ import torch
 from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
+
+from gesture.models.d2l_resnet import d2lresnet
 from gesture.models.deepmodel import deepnet, MSFBCNN
 #from example.gumbelSelection.ChannelSelection.models import
 
@@ -32,6 +34,7 @@ class SelectionLayer(nn.Module):
         y = torch.softmax(y, dim=1)  # concrete distribution. torch.Size([16, 44, 3])
         return y
 
+    # uniform distr sampling
     def get_eps(self, size):
         eps = self.floatTensor(size).uniform_(epsilon, 1 - epsilon)
         return eps
@@ -71,7 +74,7 @@ def init_weights(m):
 
 # net2 = selectionNet(n_chans,5,500,M):  net = selectionNet(n_chans,class_number,wind,channel_to_select) # 81%
 class selectionNet(nn.Module):
-    def __init__(self,chn_number, class_number, wind_size, M, output_dim=5): #output_dim is the class number
+    def __init__(self,chn_number, class_number, wind_size, M, output_dim=5,class_net=None): #output_dim is the class number
         super(selectionNet, self).__init__()
         self.floatTensor = torch.FloatTensor if not torch.cuda.is_available() else torch.cuda.FloatTensor
 
@@ -81,6 +84,11 @@ class selectionNet(nn.Module):
         self.output_dim = output_dim
 
         self.selection_layer = SelectionLayer(self.N, self.M)
+
+        # if isinstance(class_net,d2lresnet):
+        #     self.network = class_net
+        # elif isinstance(class_net,deepnet):
+        #     self.network = deepnet(self.M, self.output_dim, self.T)
         self.network = deepnet(self.M, self.output_dim, self.T)
         #self.network = MSFBCNN(input_dim=[self.M, self.T], output_dim=class_number) # does not converge at all
         #self.network = deepnet(self.M, class_number,input_window_samples=wind_size, final_conv_length='auto')
@@ -93,7 +101,7 @@ class selectionNet(nn.Module):
             x = torch.unsqueeze(x, dim=1)
             y_selected = self.selection_layer(x)  # x: [16, 1, 44, 1125] y_selected:[16, 1, 3, 1125]
             out = self.network(y_selected)
-        elif isinstance(self.network,deepnet):
+        elif isinstance(self.network,deepnet) or isinstance(self.network,d2lresnet):
             x=torch.unsqueeze(x,dim=1) # torch.Size([10, 208, 500])
             y_selected = self.selection_layer(x) #torch.Size([10, 1, 10, 500])
             y_selected = torch.squeeze(y_selected) #torch.Size([10, 10, 500])
@@ -104,9 +112,9 @@ class selectionNet(nn.Module):
         return out
 
     def regularizer(self, lamba, weight_decay):
-        # Regularization of selection layer
+        # Regularization of selection layer: penalize multiple selection
         reg_selection = self.floatTensor([0])
-        # L2-Regularization of other layers
+        # L2-Regularization of other layers: weight decay
         reg = self.floatTensor([0])
         for i, layer in enumerate(self.layers): # selection subnet(one selectionLayer) and deepconv (multiple Conv2D+linear)
             if (type(layer) == SelectionLayer):
@@ -148,7 +156,7 @@ class selectionNet(nn.Module):
         m = self.selection_layer
         eps = 1e-10
         # Probability distributions
-        z = torch.clamp(torch.softmax(m.qz_loga, dim=0), eps, 1)
+        z = torch.clamp(torch.softmax(m.qz_loga, dim=0), eps, 1) # torch.Size([149, 10])
         # Normalized entropy
         H = - torch.sum(z * torch.log(z), dim=0) / math.log(self.N)
         # Selections

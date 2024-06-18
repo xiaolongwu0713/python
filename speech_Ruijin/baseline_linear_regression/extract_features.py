@@ -180,6 +180,82 @@ def nameVector(elecs, modelOrder=4):
 winL and frameshift are in time, rather than sequence length. 
 winL and frameshift are the same for EEG and audio data, so that the final features of EEG and audio have the same length.
 '''
+
+def read_raw_data(dataset_name='mydata', sid=1, use_channels=False, session=1):
+    if dataset_name == 'mydata':
+        from scipy.io import wavfile
+
+        participant = 'mydate'
+        from speech_Ruijin.config import data_dir
+        filename = data_dir + "P" + str(sid) + "/processed/EEG/session" + str(session) #+ ".npy"
+        if sid>=5:
+            filename=filename+'_curry_crop.npy'
+        else:
+            filename=filename+'.npy'
+        print('Loading ' + filename + '.')
+        eeg = np.load(filename)
+        eeg_sr = 1000
+        # test_shift=int(mydate_shift*eeg_sr)
+        # eeg = eeg[:, extra_EEG_extracting * eeg_sr:-extra_EEG_extracting * eeg_sr].transpose() # extra extra_EEG_extracting second from beginning and ending
+        assert test_shift < extra_EEG_extracting * eeg_sr
+        eeg = eeg[:,
+              extra_EEG_extracting * eeg_sr + test_shift:-extra_EEG_extracting * eeg_sr + test_shift].transpose()  # extra extra_EEG_extracting second from beginning and ending
+
+        filename = data_dir + "P" + str(sid) + "/processed/audio/session" + str(session) + "_denoised.wav"
+        print('Loading ' + filename + '.')
+        audio_sr, audio = wavfile.read(filename)
+        #target_SR = 16000
+    elif dataset_name == 'SingleWordProductionDutch':
+        if computer == 'mac':
+            path_bids = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch'
+            path_output = r'/Volumes/Samsung_T5/data/SingleWordProductionDutch/features'
+        elif computer == 'workstation':
+            path_bids = r'H:\Long\data\SingleWordProductionDutch-iBIDS'
+            path_output = r'H:\Long\data\SingleWordProductionDutch-iBIDS\features'
+        elif computer == 'Yoga':
+            path_bids = r'D:\data\BaiduSyncdisk\SingleWordProductionDutch'
+        elif computer == 'google':
+            path_bids = r'/content/drive/MyDrive/data/SingleWordProductionDutch'
+            path_output = '/content/drive/MyDrive/data/SingleWordProductionDutch/features'
+        # participants = pd.read_csv(os.path.join(path_bids,'participants.tsv'), delimiter='\t')
+        # for p_id, participant in enumerate(participants['participant_id']):
+
+        # Load data
+        participant = 'sub-' + f"{sid:02d}"
+        filename = os.path.join(path_bids, participant, 'ieeg', f'{participant}_task-wordProduction_ieeg.nwb')
+        print('Loading ' + filename + '.')
+        io = NWBHDF5IO(filename, 'r')
+        nwbfile = io.read()
+        # sEEG
+        eeg = nwbfile.acquisition['iEEG'].data[:]  # (307523, 127)
+        if use_channels:
+            eeg=eeg[:,use_channels]
+        eeg_sr = 1024
+        # audio
+        audio = nwbfile.acquisition['Audio'].data[:]  # (14414532,)
+        audio_sr = 48000
+        #target_SR = 16000
+        # words (markers)
+        words = nwbfile.acquisition['Stimulus'].data[:]
+        words = np.array(words, dtype=str)  # (307511,)
+        io.close()
+    elif dataset_name == 'Huashan':
+        from scipy.io import wavfile
+        from speech_Huashan.config import data_dir as data_dir_Huashan
+        sub = '0614'
+        exp = 48
+        clip = 1
+        filename = data_dir_Huashan + sub + '/processed/' + str(exp) + '_clip' + str(clip) + '.npy'
+        print('Loading ' + filename + '.')
+        eeg = np.load(filename).transpose()  # (105376, 256)
+        eeg_sr = 1000
+        filename = data_dir_Huashan + sub + '/processed/' + str(exp) + '_clip' + str(clip) + '.wav'
+        print('Loading ' + filename + '.')
+        audio_sr, audio = wavfile.read(filename)  # (4591216,)
+
+    return eeg, eeg_sr, audio, audio_sr
+
+
 def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,stepSize=5,
             winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False,window_eeg=True):
 

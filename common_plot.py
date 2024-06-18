@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['pdf.fonttype']=42
+mpl.use('Qt5Agg') # prevent fig freezing
 import matplotlib.colors as mcolors
 
 # pre-defined colors
