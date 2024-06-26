@@ -18,7 +18,7 @@ then
   done
 
 else
-  for sid in  1 2 4 5 6 7 8 9 10 #3
+  for sid in  3 #1 2 3 4 5 6 7 8 9 10 #3
   do
     echo "-------  Training ---------"
     /cygdrive/c/ProgramData/Anaconda3/envs/bci2/python.exe main.py $sid $dataname $time_stamp
