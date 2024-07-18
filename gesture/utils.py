@@ -151,17 +151,19 @@ def noise_injection_epoch_list(train_epochs,std_scale):
         train_epochs_NI.append(tmp)
     return train_epochs_NI
 
-def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,tmin=0,tmax=5):
+def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,tmin=0,tmax=5,trigger='EEG'):
     # read data
     data, channelNum = read_data_(sid)  # data: (1052092, 212)
-    data, scalerr = norm_data(data, scaler=scaler)
+    if scaler!='no':
+        data, scalerr = norm_data(data, scaler=scaler)
     epochs = gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG,tmin=tmin,tmax=tmax)
     return epochs
 
-def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False):
+def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,trigger='EEG'):
     # read data
-    data,channelNum=read_data_(sid) # data: (1052092, 212)
-    data, scalerr = norm_data(data, scaler=scaler)
+    data,channelNum=read_data_(sid,trigger='EEG') # data: (1052092, 212)
+    if scaler != 'no':
+        data, scalerr = norm_data(data, scaler=scaler)
     epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG)
     test_epochs, val_epochs, train_epochs=data_split(epochs,cv_idx=cv_idx)
     return test_epochs, val_epochs, train_epochs,scalerr

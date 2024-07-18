@@ -7,13 +7,13 @@ Subjects: SEEG1,2;
 import calendar
 import datetime
 import glob
-from util.util_MNE import delete_annotation, keep_annotation
+from utils.util_MNE import delete_annotation, keep_annotation
 from dSPEECH.config import *
 plott=False
 
 sf=1024
 type='SEEG' #'SEEG/ECoG
-sid=2 # SEEG 1/2
+sid=1 # SEEG 1/2
 
 eeg_file=data_dir+'raw/'+type+str(sid)+'_*/EEG.edf' # SEEG1_datetime
 eeg_file=os.path.normpath(glob.glob(eeg_file)[0])
@@ -23,7 +23,7 @@ if sid==1:
     # c##/DC#/TRIG/OSAT/PR/Pleth/ECG  + TB-9/HP-6/Ox-10
     if plott: raw.plot()
     bad_channels = raw.info['bads'] # 138
-    raw.drop_channels(bad_channels)  # 276--> 138
+    raw.drop_channels(bad_channels)  # 276-138=138
     if plott: raw.plot_psd(tmin=0, tmax=600, average=False, exclude="bads")
     # line noise
     freqs = (50, 100, 150, 200, 250, 300, 350, 400, 450)
@@ -100,7 +100,7 @@ for i in range(int(len(prompts_tmp)/2)):
     prompts.append(tmp)
 
 ## create matlab annotation from the prompts : append(onset, duration, description, ch_names=None)
-callider_dict={month: index for index, month in enumerate(calendar.month_abbr) if month}
+calendar_dict={month: index for index, month in enumerate(calendar.month_abbr) if month}
 orig_time=anno_natus[0]['orig_time']#datetime.datetime(2023, 11, 17, 9, 51, 34, tzinfo=datetime.timezone.utc)
 onsets=[]
 durations=[]
@@ -109,7 +109,7 @@ for prompt in prompts:
     time=prompt[0]
     year=int(time.split(' ')[0].split('-')[-1])
     month_tmp = time.split(' ')[0].split('-')[1]
-    month=callider_dict[month_tmp]
+    month=calendar_dict[month_tmp]
     day = int(time.split(' ')[0].split('-')[0])
     hour = int(time.split(' ')[1].split(':')[0])
     min = int(time.split(' ')[1].split(':')[1])
@@ -171,7 +171,7 @@ ann_comb2=anno_tmp+replace_anno
 raw2.set_annotations(ann_comb2)
 
 ## deal with the missing natus triggers
-n_natus=[tmp for tmp in ra1w2.annotations if tmp['description']=='TRIG[001]:1' ]
+n_natus=[tmp for tmp in raw2.annotations if tmp['description']=='TRIG[001]:1' ]
 n_matlab=[tmp for tmp in raw2.annotations if tmp['description']=='TRIG-matlab' ]
 diff=len(n_matlab)-len(n_natus) # 4 triggers missing in n_natus
 # visual check the missing natus triggers

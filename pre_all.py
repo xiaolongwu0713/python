@@ -1,5 +1,5 @@
 ## A timer to calculate the running period
-from util import my_timer
+from utils import my_timer
 ## Indicate the name of the script file
 #import __main__ as main
 #print('Running '+ main.__file__+'.') # only works when execute in CMD, but not IDE

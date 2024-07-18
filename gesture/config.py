@@ -3,7 +3,6 @@ import numpy as np
 import mne
 import os, re,sys,socket
 
-
 data_dir = top_data_dir+'gesture/'  # temp data dir
 root_dir = top_root_dir+'gesture/'
 result_dir = root_dir + 'result/'
@@ -28,7 +27,7 @@ with open(final_good_sids_file, "r") as infile:
     lines = infile.read().split('\n')
 final_good_sids=[int(tmpi) for tmpi in lines if len(tmpi)>0]
 
-Frequencies = np.load(info_dir+'Info.npy', allow_pickle=True)
+Frequencies = np.load(info_dir+'Info(use_Info.txt_instead).npy', allow_pickle=True)
 
 # [sid, fs, number of electrodes]
 Electrodes_tmp=np.array([[2, 1000,121], [3, 1000,180], [ 4, 1000,60], [5, 1000,178], [ 7, 1000,143],[ 8, 1000,169],
@@ -61,19 +60,5 @@ def printVariables(variable_names):
         max_name_len = max([len(k) for k in variable_names])
         print(f'  {k:<{max_name_len}}:  {globals()[k]}')
 
-trial_num={'10':304,
-           }
-
-
-# CWGANGP
-#time_stamp=['2024_04_12_14_49_29',]
-#ckpt_epoch=[333,]
-# cTGAN
-#time_stamp_cTGAN=['2024_04_14_16_39_27',]
-#ckpt_epoch=[98,]
-
-# [cTGAN, CWGANGP, VAE]
-time_stamps=[['2024_04_14_16_39_27',],['2024_04_12_14_49_29',],['2024_04_15_10_00_26',]]
-ckpt_epochs=[[98,],[333,],[None,]]
 
 

@@ -7,7 +7,7 @@ Subjects: ECoG1;
 import calendar
 import datetime
 import glob
-from util.util_MNE import delete_annotation, keep_annotation
+from utils.util_MNE import delete_annotation, keep_annotation
 from dSPEECH.config import *
 
 sf=1024

@@ -1,6 +1,6 @@
 ## This script extract the anatomic name/label and position (electrodes_Final_Norm.mat obtained by freesurfer) of each electrode into a dict, ele.
 ## The new name is in the format of: "sid-lab_id-total/i-th": for example, 2-3020-4/1: the 1st electrode (out of 4) of sid2 in the 3020 region;
-## The correspondance between SEEG data and electrode location is achieved by SignalChanel_Electrode_Registration.mat, which was
+## The correspondance between SEEG data and electrode anatomic info is achieved by SignalChanel_Electrode_Registration.mat, which was
 ## further explained below:
 import numpy as np
 
@@ -18,8 +18,9 @@ import scipy.io
 from gesture.config import *
 import h5py
 import pandas as pd
+from gesture.brain_network.util import reduce_duplicated_hyph
 
-# parse the look_up_table into dict: key(name)-->value(index)
+# parse the look_up_table into ana_dic (dict): key(name)-->value(index)
 ana_dic={}
 filename=meta_dir+'EleCTX_Files/FsTutorial_AnatomicalROI_FreeSurferColorLUT.txt'
 with open(filename,"r") as infile:
@@ -31,7 +32,7 @@ for line in lines:
             ana_dic[tmp[1]]=tmp[0] #
 ana_dic['ctx-nown']='9999' # patient anatomic file contain 'ctx-nown' label which is not contained by the look_up_table
 
-info_file=info_dir+'Info.npy'
+info_file=info_dir+'Info(use_Info.txt_instead).npy' # TODO: use the Info.txt instead
 info=np.load(info_file,allow_pickle=True)
 
 filename=meta_dir+"good_channels.mat"
@@ -41,22 +42,6 @@ good_channels={}
 reg={}
 ele={}
 
-def reduce_duplicated_hyph(aname):
-    aname2 = []
-    prev = aname[0]
-    for c in aname[1:]:
-        if c == '-':
-            if prev == '-':
-                pass
-            else:
-                aname2.append(prev)
-        else:
-            aname2.append(prev)
-        prev = c
-    aname2.append(c)
-    aname2 = ''.join(i for i in aname2)
-    return aname2
-
 for i,j in enumerate(info[:,0]):
     #sid=good_channels_tmp[i].dtype.names[0]
     sid='sid'+str(j)
@@ -64,28 +49,29 @@ for i,j in enumerate(info[:,0]):
 
     reg_file = meta_dir + 'EleCTX_Files/P' + str(j) + '/SignalChanel_Electrode_Registration.mat'
     tmp = scipy.io.loadmat(reg_file)
-    reg[sid] = list(tmp['CHN'][:, 0])
+    reg[sid] = list(tmp['CHN'][:, 0]) # channel index in a list
 
     tmp=good_channels_tmp[i][0][sid][0][0,:]
     tmp_list=[int(m) for m in tmp]
     good_channels[sid]=tmp_list # sid2: 115 channels
 
-    indices=[reg[sid].index(l) for l in good_channels[sid]]
+    good_channels_indices=[reg[sid].index(l) for l in good_channels[sid]] # good channel index in the registration file
 
     filename=meta_dir+'EleCTX_Files/P'+str(j)+'/electrodes_Final_Norm.mat'
     f=h5py.File(filename, 'r')
 
-    channel_number = f['elec_Info_Final_wm']['name'].shape[0]
+    channel_number = f['elec_Info_Final_wm']['name'].shape[0] # sid2: 121 in total (bad and good)
     for key in ['ana_label_name', 'name']:
-        ana_name_list = []
+        value_list = [] # 121
         for k in range(channel_number):
-            a=np.asarray(f[np.asarray(f['elec_Info_Final_wm'][key])[k, 0]])
-            aname=''.join(chr(i[0]) for i in a)
+            #a=np.asarray(f[np.asarray(f['elec_Info_Final_wm'][key])[k, 0]])
+            a=f[f['elec_Info_Final_wm'][key][k,0]]
+            value=''.join(chr(i[0]) for i in a)
             # ctx--lh-superiorparietal in ana_name_list2 is not contained in ana_dic
-            aname=reduce_duplicated_hyph(aname)
-            ana_name_list.append(aname)
-        ana_name_list2=[ana_name_list[n] for n in indices]
-        ele[sid][key] = ana_name_list
+            value=reduce_duplicated_hyph(value)
+            value_list.append(value)
+        ana_name_list2=[value_list[n] for n in good_channels_indices] # extract 115 channels from total 121
+        ele[sid][key] = ana_name_list2
         if key=='ana_label_name':
             # !!!! make sure to keep the original channel sequence
             # Also can be converted to anatomical index using the freesurfer look_up_table
@@ -103,21 +89,24 @@ for i,j in enumerate(info[:,0]):
     for key in ['ano_pos', 'norm_pos', 'pos']:
         tmp_list = []
         for k in range(channel_number):
-            a=np.asarray(f[np.asarray(f['elec_Info_Final_wm'][key])[k, 0]])
+            #a=np.asarray(f[np.asarray(f['elec_Info_Final_wm'][key])[k, 0]])
+            a = f[f['elec_Info_Final_wm'][key][k, 0]]
             #tmp_list.append(''.join(chr(i[0]) for i in a))
-            tmp_list.append([i.item() for i in a])
-        tmp_list2 = [tmp_list[n] for n in indices]
+            value=[i.item() for i in a]# [104.0, 134.0, 138.0]
+            tmp_list.append(value)
+        tmp_list2 = [tmp_list[n] for n in good_channels_indices]
         ele[sid][key]=tmp_list2
 
+filename=meta_dir+'ele_anat_position_info.npy'
+np.save(filename, ele)
     # sid41 doesn't have below info
     # for key in ['GMPI', 'LocalPTD', 'PTD', 'ana_cube']:
     #     tmp2=np.array(f['elec_Info_Final_wm'][key])
     #     ele[sid][key] = tmp2
 
-#  'ano_pos' 'norm_pos', 'pos'
-#dict_keys(['GMPI', 'LocalPTD', 'PTD', 'ana_cube', 'ana_label_name', 'ano_pos', 'name', 'norm_pos', 'pos'])
-
-
+#Total information: (['GMPI', 'LocalPTD', 'PTD', 'ana_cube', 'ana_label_name', 'ano_pos', 'name', 'norm_pos', 'pos'])
+#filename=meta_dir+'ele_anat_position_info.npy'
+#ele2 = np.load(filename,allow_pickle='TRUE').item()
 
 sid=2
 fs=1000

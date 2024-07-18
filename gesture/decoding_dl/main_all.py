@@ -11,8 +11,8 @@ elif socket.gethostname() == 'Long': # Yoga
 
 
 from torch.optim import lr_scheduler
+import matplotlib.pyplot as plt
 from braindecode.models import ShallowFBCSPNet,EEGNetv4,Deep4Net
-from gesture.config import time_stamps,ckpt_epochs
 from gesture.channel_selection.utils import get_good_sids, get_final_good_sids, get_selected_channel_gumbel,get_selected_channel_stg
 from gesture.channel_selection.mannal_selection import mannual_selection
 from gesture.utils import *
@@ -136,7 +136,6 @@ elif train_mode=='original':
     selected_channels = False
     result_path = result_dir + 'deepLearning/original/sid'+str(sid) + '/cv'+str(cv)+'/'
     print("Original training.")
-
 
 if not os.path.exists(result_path):
     os.makedirs(result_path)
