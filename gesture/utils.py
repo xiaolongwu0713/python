@@ -3,10 +3,45 @@ import glob
 import hdf5storage
 import random
 
+import numpy as np
+import scipy
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
 
 from gesture.DA.add_noise.noise_injection import  noise_injection_3d
 from gesture.config import *
+
+# this function returns dict with 'sid2' as key and channel index list [1,2,3,4....] as value;
+def get_good_channels():
+    filename=meta_dir+"good_channels.mat"
+    mat=scipy.io.loadmat(filename)
+    good_channels_tmp=mat['good_channels'][0]
+    good_channels={}
+
+    for i in range(len(good_channels_tmp)):
+        key=good_channels_tmp[i][0].dtype.names[0]
+        value=good_channels_tmp[i][0].item()[0][0]
+        good_channels[key]=value
+    return good_channels
+
+# This function returns dict with key as 'sid2' and value as 1000;
+def sub_sf_dict():
+    info_file=info_dir+'Info.txt' # TODO: use the Info.txt instead
+    info=[]
+    with open(info_file,'r') as f:
+        lines=f.read().split('\n')
+        for line in lines:
+            tmp=[]
+            if len(line)>0:
+                line=line.partition(',')
+                tmp.append(int(line[0]))
+                tmp.append(int(line[2]))
+                info.append(tmp)
+
+    info_dict={}
+    for i in info:
+        info_dict[str(i[0])]=i[1]
+
+    return info_dict
 
 ## read good sids
 def read_good_sids():
@@ -151,28 +186,50 @@ def noise_injection_epoch_list(train_epochs,std_scale):
         train_epochs_NI.append(tmp)
     return train_epochs_NI
 
-def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,tmin=0,tmax=5,trigger='EEG'):
-    # read data
-    data, channelNum = read_data_(sid)  # data: (1052092, 212)
-    if scaler!='no':
-        data, scalerr = norm_data(data, scaler=scaler)
-    epochs = gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG,tmin=tmin,tmax=tmax)
-    return epochs
+# epochs could be created using EEG trigger channel (trigger='EEG') or it could be created by checking the EMG signals (trigger='EMG')
+# Nots abou the EMG created epochs
+# 1. It is not re-referenced, so it's suitable for correlation analysis of different brain regions.
+# 2. It contains 'bad channels': data were not extracted by good_channels as in the preprocess2.m file.
+def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,tmin=0,tmax=5,trigger='EEG',random_shift=False):
+    if trigger.upper() == 'EEG':
+        # read data
+        data, channelNum = read_data_(sid)  # data: (1052092, 212)
+        if scaler!='no':
+            data, scalerr = norm_data(data, scaler=scaler)
+        epochs = gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG,tmin=tmin,tmax=tmax)
+        return epochs
+    elif trigger.upper()=='EMG':
+        save_folder = data_dir + 'preprocessing_no_re_ref/' + 'P' + str(sid) + '/'
+        filename = save_folder + 'emg_trigger_raw.fif'
+        raw=mne.io.read_raw_fif(filename)
+        events_eeg = mne.find_events(raw, stim_channel='trigger_index')
+        events_emg = mne.find_events(raw, stim_channel='trigger_index_emg')
+        if random_shift is not False:
+            shift = [int(random.uniform(random_shift[0], random_shift[1])) for _ in range(events_eeg.shape[0])]
+            events_eeg[:,0] = events_eeg[:,0]+shift
+            events_emg[:,0] = events_emg[:, 0] + shift
+
+        if len(events_emg)==len(events_eeg):
+            epochs_eeg = mne.Epochs(raw, events_eeg, tmin=tmin, tmax=tmax, baseline=None)
+            epochs_emg = mne.Epochs(raw, events_emg, tmin=tmin, tmax=tmax, baseline=None)
+        else:
+            sys.exit("Events number obtained by EEG and EMG are not the same!!!")
+        return epochs_emg
 
 def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,trigger='EEG'):
-    # read data
-    data,channelNum=read_data_(sid,trigger='EEG') # data: (1052092, 212)
+    data,channelNum=read_data_(sid) # data: (1052092, 212)
     if scaler != 'no':
         data, scalerr = norm_data(data, scaler=scaler)
     epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG)
-    test_epochs, val_epochs, train_epochs=data_split(epochs,cv_idx=cv_idx)
-    return test_epochs, val_epochs, train_epochs,scalerr
+    test_epochs, val_epochs, train_epochs = data_split(epochs, cv_idx=cv_idx)
+    return test_epochs, val_epochs, train_epochs, scalerr
+
 
 # rest(4 s)--> cue (1s) ---> movement (5 s)
 # tmin, tmax=0,5;
 def gen_epoch(data,fs,channelNum,selected_channels=None, EMG=False,tmin=0,tmax=5):
-    chn_names=np.append(["seeg"]*channelNum,["emg0","emg1","stim_trigger","stim_emg"])
-    chn_types=np.append(["seeg"]*channelNum,["emg","emg","stim","stim"])
+    chn_names=np.append(["eeg"]*channelNum,["emg0","emg1","stim_trigger","stim_emg"])
+    chn_types=np.append(["eeg"]*channelNum,["emg","emg","stim","stim"])
     info = mne.create_info(ch_names=list(chn_names), ch_types=list(chn_types), sfreq=fs)
     raw = mne.io.RawArray(data.transpose(), info)
 
@@ -186,9 +243,9 @@ def gen_epoch(data,fs,channelNum,selected_channels=None, EMG=False,tmin=0,tmax=5
     #print(events[:5])  # show the first 5
     # Epoch from 4s before(idle) until 4s after(movement) stim1.
     if EMG:
-        picks=["seeg","emg"]
+        picks=["eeg","emg"]
     else:
-        picks=["seeg"]
+        picks=["eeg"]
     raw=raw.pick(picks) #raw=raw.pick(["seeg"])
 
     if selected_channels:
@@ -329,6 +386,8 @@ def windowed_data(train_epochs, val_epochs, test_epochs, wind, stride, gen_data_
         X_train.append(Xi)
         y_train.append(y)
     X_train = np.concatenate(X_train, axis=0)  # (1300, 63, 500)
-    y_train = np.asarray(y_train)  # sum(y_train==4)
-    y_train = np.reshape(y_train, (-1, 1))  # (5, 270)-->(-1, ?)
+    y_train=np.concatenate(y_train)
+    y_train=y_train[:,np.newaxis]
+    #y_train = np.asarray(y_train)  # sum(y_train==4)
+    #y_train = np.reshape(y_train, (-1, 1))  # (5, 270)-->(-1, ?)
     return X_train, y_train, X_val, y_val, X_test, y_test

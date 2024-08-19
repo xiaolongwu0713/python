@@ -5,7 +5,7 @@ from utils import my_timer
 #print('Running '+ main.__file__+'.') # only works when execute in CMD, but not IDE
 ## TODO: what's this?
 import sys,os
-sys.dont_write_bytecode = True
+#sys.dont_write_bytecode = True
 
 gettrace = getattr(sys, 'gettrace', None)
 if gettrace is None:
@@ -75,8 +75,8 @@ class Logger(object):
 
     def flush(self):
         self.log.flush()
-logfilename=tmp_dir+'log/pycharm/'+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
-sys.stdout = Logger(filename=logfilename)
+#logfilename=tmp_dir+'log/pycharm/'+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'_log.txt'
+#sys.stdout = Logger(filename=logfilename)
 
 import os
 

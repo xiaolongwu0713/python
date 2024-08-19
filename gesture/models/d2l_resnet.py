@@ -58,7 +58,10 @@ class d2lresnet(nn.Module):
         self.activation = nn.ReLU()
         self.task=task
         if self.task=='classification':
-            self.target_d=class_num
+            if class_num==2:
+                self.target_d=1
+            else:
+                self.target_d=class_num
         elif self.task=='regression':
             self.target_d=reg_d
         #self.block_num=block_num
@@ -81,9 +84,9 @@ class d2lresnet(nn.Module):
         y=self.d2lresnet(x) # use CrossEntropyLoss loss
         y=self.dropoutAndlinear(y)
         if self.end_with_logsoftmax==True: #self.as_discriminator==False:
-            return F.log_softmax(y, dim=1) # use a NLLLoss
+            return F.log_softmax(y, dim=1).squeeze() # use a NLLLoss
         else:
-            return y #use a torch.nn.CrossEntropyLoss
+            return y.squeeze() #use a torch.nn.CrossEntropyLoss
 
     #x=torch.randn(32,1,208,500)
 
