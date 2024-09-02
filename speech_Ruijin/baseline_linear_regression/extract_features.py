@@ -342,16 +342,18 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         folder = data_dir + str(sid) + '-*'
         folder = os.path.normpath(glob.glob(folder)[0])
         folder = folder.replace("\\", "/")
-        filename = folder + '/processed/session' + str(session) + '_task_data_no_last_trial.fif'
+        filename = folder + '/processed/session' + str(session) + '_task_data_no_first_last_trial.fif'
         raw=mne.io.read_raw_fif(filename)
         eeg=raw.get_data()
         eeg = eeg.transpose()  # (842376, 121) # 842.376s
         eeg_sr = 1000
-        eeg=eeg[100*eeg_sr:300*eeg_sr,:]
+        start_from=200 # s
+        end=600 # s
+        eeg=eeg[start_from*eeg_sr:end*eeg_sr,:]
 
-        filename = folder + '/processed/session' + str(session) + '_clean_padded_no_last_trial.wav'
+        filename = folder + '/processed/session' + str(session) + '_clean_padded_no_first_last_trial.wav'
         audio_sr, audio = wavfile.read(filename)  # (40432263,) # 842.3388125s
-        audio = audio[100*audio_sr:300 * audio_sr:]
+        audio = audio[start_from*audio_sr:end * audio_sr:]
     # Extract HG features and average the window
     #frameshift = 256 / target_SR
     #winL = 1024 / target_SR
