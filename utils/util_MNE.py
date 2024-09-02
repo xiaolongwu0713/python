@@ -1,3 +1,6 @@
+import copy
+
+
 def delete_annotation(annotation,description_or_list_of_desc):
     del_anno = []
     for i in range(len(annotation)):
@@ -13,14 +16,15 @@ def delete_annotation(annotation,description_or_list_of_desc):
 
 # delete annotation from annotations which is not or not contained in the description_or_list_of_desc.
 def keep_annotation(annotations, description_or_list_of_desc):
+    annotations_tmp=copy.deepcopy(annotations)
     del_anno = []
-    for i in range(len(annotations)):
+    for i in range(len(annotations_tmp)):
         if isinstance(description_or_list_of_desc, list):
-            if annotations[i]['description'] not in description_or_list_of_desc:  # !=event_descripion:
+            if annotations_tmp[i]['description'] not in description_or_list_of_desc:  # !=event_descripion:
                 del_anno.append(i)
         else:
-            if annotations[i]['description'] != description_or_list_of_desc:  # !=event_descripion:
+            if annotations_tmp[i]['description'] != description_or_list_of_desc:  # !=event_descripion:
                 del_anno.append(i)
 
-    annotations.delete(del_anno)  # 124
-    return annotations
+    annotations_tmp.delete(del_anno)  # 124
+    return annotations_tmp

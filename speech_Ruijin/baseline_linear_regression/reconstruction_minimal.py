@@ -1,7 +1,7 @@
 '''
 This script use a simple linear regression as a baseline;
 '''
-
+import glob
 import os
 
 import scipy
@@ -280,7 +280,7 @@ if __name__=="__main__":
     winL = opt['winL']
     frameshift = opt['frameshift']
     melbins=23
-    data_name='SingleWordProductionDutch' # 'SingleWordProductionDutch'/'mydata'/'Huashan'
+    data_name='Ruinjin_pinyin' # 'SingleWordProductionDutch'/'mydata'/'Huashan'/'Ruinjin_pinyin'
     if data_name=='mydata':
         sid=5
         session=1
@@ -322,6 +322,34 @@ if __name__=="__main__":
                 f.write(str(mse))
             ax[0].clear()
             ax[1].clear()
+    elif data_name=='Ruinjin_pinyin':
+        from speech_pinyin.config import data_dir
+        sid = 1
+        folder = data_dir + str(sid) + '-*'
+        folder = os.path.normpath(glob.glob(folder)[0])
+        folder = folder.replace("\\", "/")
+        folder=folder+'/result/'
+        pred, truth, rs = baseline(data_name=data_name, sid=sid, melbins=melbins, model_order=model_order,
+                                   step_size=step_size, estimate_random_baseline=False, winL=winL,
+                                   frameshift=frameshift)
+        np.save(folder + 'pred.npy', pred)
+        np.save(folder + 'truth.npy', truth)
+        ax[0].imshow(truth[:, :].transpose(), aspect='auto')
+        ax[1].imshow(pred[:, :].transpose(), aspect='auto')
+        fig.savefig(folder + 'result.png')
+        mse = mean_squared_error(truth[:3000, :], pred[:3000, :])
+        corr = np.mean(rs)
+        # exit()  # stop from here
+        filename = folder + 'result.txt'
+        with open(filename, 'w') as f:
+            f.write('corr:')
+            f.write(str(corr))
+            f.write('\n')
+            f.write('mse:')
+            f.write(str(mse))
+        ax[0].clear()
+        ax[1].clear()
+
     '''
     # test the 3D plot
     X = np.arange(5997)

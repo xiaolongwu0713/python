@@ -20,7 +20,7 @@ def reduce_duplicated_hyph(aname):
     return aname2
 
 
-def calculate_CC(sid1, sf1, sid2, sf2, f1,f2,trigger='EMG',re_ordered=True,by_channel=True,random_shift=False):
+def calculate_CC(sid1, sf1, sid2, sf2, f1,f2,trigger='EMG',re_ordered=True,by_channel=True,random_shift=False,duration=0.5):
     datas = []  # trial, channel, time
     #total_ch_numbers = []
     #good_channels = []
@@ -28,7 +28,7 @@ def calculate_CC(sid1, sf1, sid2, sf2, f1,f2,trigger='EMG',re_ordered=True,by_ch
     #bad_channels = []
     ordered_ch_names = []
     for sid,sf in zip([sid1, sid2], [sf1, sf2]):
-        epoch_ordered= load_data_and_clean_up(sid, sf, f1=f1,f2=f2,trigger=trigger, re_ordered=re_ordered,random_shift=random_shift)
+        epoch_ordered= load_data_and_clean_up(sid, sf, duration=duration, f1=f1,f2=f2,trigger=trigger, re_ordered=re_ordered,random_shift=random_shift)
         datas.append(epoch_ordered.pick(picks=['eeg']).get_data())
         # epochs_tmp = get_epoch(sid, sf, scaler='no', trigger='EMG', tmin=tmin, tmax=tmax)
         # epoch = epochs_tmp['3']  # simple grasp
@@ -95,9 +95,9 @@ def calculate_CC(sid1, sf1, sid2, sf2, f1,f2,trigger='EMG',re_ordered=True,by_ch
     return matrixes, ordered_ch_names
 
 # read the data--> bandpass(f1,f2)-->drop bad channels-->rename the channel names (anatomic names)---> re-order channel according to the locations
-def load_data_and_clean_up(sid, sf,f1=0.1,f2=4,trigger='EMG',re_ordered=True,random_shift=False):
+def load_data_and_clean_up(sid, sf,duration=0.5, f1=0.1,f2=4,trigger='EMG',re_ordered=True,random_shift=False):
     tmin = 0
-    tmax = 0.5
+    tmax = duration
 
     good_channel_dict = get_good_channels()
     epochs_tmp = get_epoch(sid, sf, scaler='no', trigger=trigger, tmin=tmin, tmax=tmax,random_shift=random_shift)

@@ -1,6 +1,8 @@
+import glob
 import math
 import os
 
+import mne
 import pandas as pd
 import numpy as np
 import numpy.matlib as matlib
@@ -20,6 +22,7 @@ hilbert3 = lambda x: scipy.signal.hilbert(x, scipy.fftpack.next_fast_len(len(x))
 
 
 def extractHG(data, sr, windowLength=0.05, frameshift=0.01,window_eeg=True):
+    already_notch_filtered=False
     """
     Window data and extract frequency-band envelope using the hilbert transform
 
@@ -43,12 +46,13 @@ def extractHG(data, sr, windowLength=0.05, frameshift=0.01,window_eeg=True):
     # Filter High-Gamma Band
     sos = scipy.signal.iirfilter(4, [70 / (sr / 2), 170 / (sr / 2)], btype='bandpass', output='sos')
     data = scipy.signal.sosfiltfilt(sos, data, axis=0)  # (307511, 127)
-    # Attenuate first harmonic of line noise
-    sos = scipy.signal.iirfilter(4, [98 / (sr / 2), 102 / (sr / 2)], btype='bandstop', output='sos')
-    data = scipy.signal.sosfiltfilt(sos, data, axis=0)
-    # Attenuate second harmonic of line noise
-    sos = scipy.signal.iirfilter(4, [148 / (sr / 2), 152 / (sr / 2)], btype='bandstop', output='sos')
-    data = scipy.signal.sosfiltfilt(sos, data, axis=0)
+    if not already_notch_filtered:
+        # Attenuate first harmonic of line noise
+        sos = scipy.signal.iirfilter(4, [98 / (sr / 2), 102 / (sr / 2)], btype='bandstop', output='sos')
+        data = scipy.signal.sosfiltfilt(sos, data, axis=0)
+        # Attenuate second harmonic of line noise
+        sos = scipy.signal.iirfilter(4, [148 / (sr / 2), 152 / (sr / 2)], btype='bandstop', output='sos')
+        data = scipy.signal.sosfiltfilt(sos, data, axis=0)
     # Create feature space
     data = np.abs(hilbert3(data)) # (307523, 127)
     if window_eeg:
@@ -139,7 +143,7 @@ def extractMelSpecs(audio, sr, windowLength=0.05, frameshift=0.01, melbins=23):
         Logarithmic mel scaled spectrogram
     """
     numWindows = int(np.floor((audio.shape[0] - windowLength * sr) / (frameshift * sr)))
-    win = scipy.hanning(np.floor(windowLength * sr + 1))[:-1]
+    win = scipy.signal.windows.hann(int(np.floor(windowLength * sr + 1)))[:-1]
     spectrogram = np.zeros((numWindows, int(np.floor(windowLength * sr / 2 + 1))), dtype='complex')
     for w in range(numWindows):
         start_audio = int(np.floor((w * frameshift) * sr))
@@ -258,7 +262,7 @@ def read_raw_data(dataset_name='mydata', sid=1, use_channels=False, session=1):
 
 def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_shift=0, melbins=23, stacking=True, modelOrder=5,stepSize=5,
             winL=0.05, frameshift=0.01,target_SR = 16000,return_original_audio=False,use_the_official_tactron_with_waveglow=False,window_eeg=True):
-
+    print('Datase: '+dataset_name+'.')
     if dataset_name == 'mydata':
         from scipy.io import wavfile
 
@@ -330,6 +334,24 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         print('Loading ' + filename + '.')
         audio_sr, audio = wavfile.read(filename)  # (4591216,)
 
+    elif dataset_name=='Ruinjin_pinyin':
+        from scipy.io import wavfile
+        from speech_pinyin.config import data_dir
+        sid = 1
+        session=3
+        folder = data_dir + str(sid) + '-*'
+        folder = os.path.normpath(glob.glob(folder)[0])
+        folder = folder.replace("\\", "/")
+        filename = folder + '/processed/session' + str(session) + '_task_data_no_last_trial.fif'
+        raw=mne.io.read_raw_fif(filename)
+        eeg=raw.get_data()
+        eeg = eeg.transpose()  # (842376, 121) # 842.376s
+        eeg_sr = 1000
+        eeg=eeg[100*eeg_sr:300*eeg_sr,:]
+
+        filename = folder + '/processed/session' + str(session) + '_clean_padded_no_last_trial.wav'
+        audio_sr, audio = wavfile.read(filename)  # (40432263,) # 842.3388125s
+        audio = audio[100*audio_sr:300 * audio_sr:]
     # Extract HG features and average the window
     #frameshift = 256 / target_SR
     #winL = 1024 / target_SR

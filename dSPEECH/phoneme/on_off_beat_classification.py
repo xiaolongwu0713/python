@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from dSPEECH.config import *
-from dSPEECH.phoneme.utils import train_test_split, wind_list_of_2D
+from dSPEECH.phoneme.util import train_test_split, wind_list_of_2D
 from gesture.models.d2l_resnet import d2lresnet
 from gesture.utils import windowed_data
 
