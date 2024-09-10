@@ -95,13 +95,11 @@ def calculate_CC(sid1, sf1, sid2, sf2, f1,f2,trigger='EMG',re_ordered=True,by_ch
     return matrixes, ordered_ch_names
 
 # read the data--> bandpass(f1,f2)-->drop bad channels-->rename the channel names (anatomic names)---> re-order channel according to the locations
-def load_data_and_clean_up(sid, sf,duration=0.5, f1=0.1,f2=4,trigger='EMG',re_ordered=True,random_shift=False):
-    tmin = 0
-    tmax = duration
+def get_epoch_and_anat_label(sid, sf, tmin=0,tmax=1,trigger='EMG',re_ordered=True,random_shift=False):
 
     good_channel_dict = get_good_channels()
     epochs_tmp = get_epoch(sid, sf, scaler='no', trigger=trigger, tmin=tmin, tmax=tmax,random_shift=random_shift)
-    epoch = epochs_tmp['3'].load_data().filter(l_freq=f1, h_freq=f2, picks=['eeg'])  # simple grasp
+    epoch = epochs_tmp #['3'].load_data().filter(l_freq=f1, h_freq=f2, picks=['eeg'])  # simple grasp
     type_list=epoch.info.get_channel_types()
     non_eeg=sum([i.upper()!='EEG' for i in type_list])
     total_ch_number = len(epoch.info.ch_names)  # 128
@@ -109,11 +107,13 @@ def load_data_and_clean_up(sid, sf,duration=0.5, f1=0.1,f2=4,trigger='EMG',re_or
     good_channel = [i - 1 for i in good_channel]  # 115
     bad_channels_ind = [i for i in range(len(epoch.ch_names) - non_eeg) if i not in good_channel]  # 7
     bad_channel = [epoch.ch_names[c] for c in bad_channels_ind]
-    epoch.load_data()
-    epoch.drop_channels(bad_channel)
+
+    # Taken care of during the get_epoch call
+    # epoch.load_data()
+    # epoch.drop_channels(bad_channel)
 
     # tmp deactivate
-    if False:
+    if True:
         info_tmp = epoch.info
         old = info_tmp.ch_names  # 122=128-6
         new = ele['sid' + str(sid)]['ana_label_id']  # 115
@@ -122,7 +122,7 @@ def load_data_and_clean_up(sid, sf,duration=0.5, f1=0.1,f2=4,trigger='EMG',re_or
         epoch.info = info_tmp
 
         assert len(good_channel) == len(new)
-        assert total_ch_number == len(new) + len(bad_channel) + 7
+        assert total_ch_number == len(new) +7 #+ len(bad_channel) + 7
 
     ch_names = epoch.info.ch_names
     sorted_index = sorted(range(len(ch_names)), key=ch_names.__getitem__)

@@ -148,13 +148,12 @@ for chIndex,chID in enumerate(selected_channels):
     print('Computing TF on ' + str(chIndex) + '/'+str(len(selected_channels))+' channel.')
 
     # decim will decrease the sfreq, so 15s will becomes 5s afterward.
-    tmp = tfr_morlet(epoch1, picks=[chID],
-                                     freqs=freqs, n_cycles=n_cycles, use_fft=True, return_itc=False, average=True,
+    tmp = tfr_morlet(epoch1, picks=[chID],freqs=freqs, n_cycles=n_cycles, use_fft=True, return_itc=False, average=True,
                                      decim=decim, n_jobs=1)
     ch_power_avg[chIndex] = np.squeeze(tmp.data) #(148, 2501)
     # The very big artifact at begainning and end of the TF will cause ERS vanish after normalization.
-    ch_power=np.squeeze(tfr_morlet(epoch1, picks=[chID], # (20, 148, 2501)
-               freqs=freqs, n_cycles=n_cycles,use_fft=True,return_itc=False, average=False, decim=decim, n_jobs=1).data)
+    ch_power=np.squeeze(tfr_morlet(epoch1, picks=[chID], freqs=freqs, n_cycles=n_cycles,use_fft=True,return_itc=False, average=False,
+                                   decim=decim, n_jobs=1).data) # (20, 148, 2501)
     # eliminate the artifact at the begining and end of the tf matrix
     edge=20
     #ch_power[:, :, :edge] = ch_power[:, :, edge][:,:,None]

@@ -47,9 +47,9 @@ def wind_list_of_2D(ons):
 def train_test_split(data):
     trial_number=len(data)
     trial_list = list(range(trial_number))
-    train_n=int(0.6*trial_number)
-    val_n = int(0.2 * trial_number)
-    test_n = int(0.2 * trial_number)
+    train_n=int(0.7*trial_number)
+    val_n = int(0.15 * trial_number)
+    test_n = int(0.15 * trial_number)
 
     test_trails=random.sample(trial_list, test_n)
     trial_number_left=np.setdiff1d(trial_list,test_trails)

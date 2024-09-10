@@ -214,6 +214,16 @@ def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False
             epochs_emg = mne.Epochs(raw, events_emg, tmin=tmin, tmax=tmax, baseline=None)
         else:
             sys.exit("Events number obtained by EEG and EMG are not the same!!!")
+
+        # mark bad channels
+        good_channels = get_good_channels()
+        good_channel = good_channels['sid' + str(sid)]  # start from 1 (Matlab)
+        good_channel = [i - 1 for i in good_channel]
+        bad_channels_ind = [i for i in range(len(epochs_emg.ch_names) - 7) if i not in good_channel]
+        bad_channels = [epochs_emg.ch_names[c] for c in bad_channels_ind]
+        epochs_emg.load_data()
+        epochs_emg.drop_channels(bad_channels)
+
         return epochs_emg
 
 def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,trigger='EEG'):
