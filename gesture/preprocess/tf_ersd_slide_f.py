@@ -35,13 +35,13 @@ from common_dl import set_random_seeds
 import matplotlib as mpl
 from gesture.config import *
 from gesture.preprocess.chn_settings import get_channel_setting
-from gesture.feature_selection.utils import get_good_sids, get_final_good_sids, get_selected_channel_gumbel, \
+from gesture.channel_selection.utils import get_good_sids, get_final_good_sids, get_selected_channel_gumbel, \
     get_selected_channel_stg, get_selected_channel_gumbel_2_steps
 
 seed = 20200220  # random seed to make results reproducible
 set_random_seeds(seed=seed)
 
-sid=10
+sid=2
 if len(sys.argv)>1:
     sid = int(float(sys.argv[1]))
 fs=1000

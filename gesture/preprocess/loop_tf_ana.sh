@@ -46,8 +46,8 @@ done < "$good_sidsfile"
 for sid in ${sids[@]} #${good_sids[@]}
 do
   echo "Start sid: $sid"
-    #python tf_all_channel.py $sid
-    python tf_ersd_slide_f.py $sid
+    python tf_all_channel.py $sid
+    #python tf_ersd_slide_f.py $sid
   #done
 done
 
