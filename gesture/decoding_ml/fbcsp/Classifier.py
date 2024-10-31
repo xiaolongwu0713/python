@@ -127,6 +127,6 @@ class FeatureSelect:
             for j in range(n_pairs-1,-1,-1):
                 paired_features.append(sel_groups[i]*n_pairs-j)
 
-        paired_features = np.asarray(paired_features,dtype=np.int)-1
+        paired_features = np.asarray(paired_features,dtype=int)-1
 
         return paired_features

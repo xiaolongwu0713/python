@@ -28,7 +28,7 @@ class FBCSP:
 
     def transform(self,x_data,class_idx=0):
         n_fbanks, n_trials, n_channels, n_samples = x_data.shape
-        x_features = np.zeros((n_trials,self.m_filters*2*len(x_data)),dtype=np.float)
+        x_features = np.zeros((n_trials,self.m_filters*2*len(x_data)),dtype=float)
         for i in range(n_fbanks):
             eig_vectors = self.fbcsp_filters_multi[class_idx].get(i).get('u_mat')
             eig_values = self.fbcsp_filters_multi[class_idx].get(i).get('eig_val')

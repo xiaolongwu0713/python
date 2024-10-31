@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 import numpy as np
 import sklearn
 import IPython
-from speech_Ruijin.baseline_linear_regression.extract_features import extractMelSpecs
+from speech_Dutch.baseline_linear_regression.extract_features import extractMelSpecs
 import example_speech.SingleWordProductionDutch.MelFilterBank as mel
 
 import dataset

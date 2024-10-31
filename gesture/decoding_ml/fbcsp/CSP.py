@@ -9,7 +9,7 @@ class CSP:
         x_data = np.copy(x_train)
         y_labels = np.copy(y_train)
         n_trials, n_channels, n_samples = x_data.shape
-        cov_x = np.zeros((2, n_channels, n_channels), dtype=np.float)
+        cov_x = np.zeros((2, n_channels, n_channels), dtype=float)
         for i in range(n_trials):
             x_trial = x_data[i, :, :]
             y_trial = y_labels[i]

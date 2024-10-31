@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error
 from dSPEECH.config import *
 from dSPEECH.config import opt_regression_LR as opt
 from scipy.io import wavfile
-from speech_Ruijin.baseline_linear_regression.extract_features import extractHG, stackFeatures, extractMelSpecs
+from speech_Dutch.baseline_linear_regression.extract_features import extractHG, stackFeatures, extractMelSpecs
 import matplotlib.pyplot as plt
 
 modality='SEEG'

@@ -57,8 +57,8 @@ class MLEngine:
 
                 fbcsp = FBCSP(self.m_filters)
                 fbcsp.fit(x_train_fb,y_train)
-                y_train_predicted = np.zeros((y_train.shape[0], n_classes), dtype=np.float)
-                y_test_predicted = np.zeros((y_test.shape[0], n_classes), dtype=np.float)
+                y_train_predicted = np.zeros((y_train.shape[0], n_classes), dtype=float)
+                y_test_predicted = np.zeros((y_test.shape[0], n_classes), dtype=float)
 
                 for j in range(n_classes):
                     cls_of_interest = y_classes_unique[j]
@@ -72,15 +72,15 @@ class MLEngine:
 
                     classifier_type = SVR(gamma='auto')
                     classifier = Classifier(classifier_type)
-                    y_train_predicted[:,j] = classifier.fit(x_features_train,np.asarray(y_train_cls,dtype=np.float))
+                    y_train_predicted[:,j] = classifier.fit(x_features_train,np.asarray(y_train_cls,dtype=float))
                     y_test_predicted[:,j] = classifier.predict(x_features_test)
 
 
                 y_train_predicted_multi = self.get_multi_class_regressed(y_train_predicted)
                 y_test_predicted_multi = self.get_multi_class_regressed(y_test_predicted)
 
-                tr_acc =np.sum(y_train_predicted_multi == y_train, dtype=np.float) / len(y_train)
-                te_acc =np.sum(y_test_predicted_multi == y_test, dtype=np.float) / len(y_test)
+                tr_acc =np.sum(y_train_predicted_multi == y_train, dtype=float) / len(y_train)
+                te_acc =np.sum(y_test_predicted_multi == y_test, dtype=float) / len(y_test)
 
 
                 #print(f'Training Accuracy = {str(tr_acc)}\n')

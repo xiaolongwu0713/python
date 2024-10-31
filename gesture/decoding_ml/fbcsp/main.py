@@ -25,7 +25,7 @@ if len(sys.argv)>2:
     except IndexError:
         pass
 else: # debug in IDE
-    sid=10
+    sid=3
     fs=1000
 
 result_dir=data_dir+'training_result/machineLearning/FBCSP/'
@@ -35,7 +35,9 @@ class_number=5
 data_path = data_dir+'preprocessing/'+'P'+str(sid)+'/preprocessing2.mat'
 mat=hdf5storage.loadmat(data_path)
 data = mat['Datacell']
-channelNum=int(mat['channelNum'][0,0])
+#channelNum=int(mat['channelNum'][0,0])
+good_channels = mat['good_channels']
+channelNum = len(np.squeeze(good_channels))
 # total channel = channelNum + 4(2*emg + 1*trigger_indexes + 1*emg_trigger)
 data=np.concatenate((data[0,0],data[0,1]),0) # (1052092, 212)
 del mat
@@ -43,7 +45,7 @@ data=data.transpose()# (212, 1052092)
 
 # standardization
 # no effect. why?
-if 1==0: #(n_samples, n_features)
+if 1==1: #(n_samples, n_features)
     chn_data=data[-4:,:]
     data=data[:-4,:]
     scaler = StandardScaler()
@@ -69,10 +71,14 @@ events1=events1-[0,0,1]
 # Epoch from 4s before(idle) until 4s after(movement) stim1.
 raw=raw.pick(["seeg"])
 #raw=raw.pick(list(np.arange(162,168)))
+
+
 if fs==1000:
     epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None).load_data().resample(500)
 else:
     epochs = mne.Epochs(raw, events1, tmin=0, tmax=4, baseline=None).load_data()
+
+
 # or epoch from 0s to 4s which only contain movement data.
 # epochs = mne.Epochs(raw, events1, tmin=0, tmax=4,baseline=None)
 
@@ -98,7 +104,7 @@ dataset_details={
     'data_path' : "/Volumes/Samsung_T5/data/BCI_competition/BCICIV_2a_gdf",
     'file_to_load': 'A01T.gdf',
     'ntimes': 1,
-    'kfold':10,
+    'kfold':5,
     'm_filters':2,
     #'window_details':{'tmin':0.0,'tmax':4.0},
     'X_train':list_of_epoch,
@@ -107,6 +113,7 @@ dataset_details={
 
 ML_experiment = MLEngine(**dataset_details)
 test_acc=ML_experiment.experiment()
+print('Testing result: '+str(test_acc)+'.')
 result_file=result_dir+str(sid)
 np.save(result_file,test_acc)
 

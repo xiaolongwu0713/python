@@ -8,9 +8,9 @@ torch.manual_seed(1)
 torch.cuda.manual_seed_all(2)
 
 from example_speech.closed_loop_seeg_speech_synthesis_master_bak.test import get_data
-from speech_Ruijin.utils import fold_2d23d
+from speech_Dutch.utils import fold_2d23d
 
-from speech_Ruijin.config import data_dir
+from speech_Dutch.config import data_dir
 from datetime import datetime
 import pytz
 

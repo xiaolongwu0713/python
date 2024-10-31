@@ -184,7 +184,7 @@ if __name__=="__main__":
             from scipy.io import wavfile
 
             participant='mydate'
-            from speech_Ruijin.config import data_dir
+            from speech_Dutch.config import data_dir
             sid=1
             session=1
             filename = data_dir + "P" + str(sid) + "/processed/EEG/session" + str(session + 1) + ".npy"
