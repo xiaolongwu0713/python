@@ -323,7 +323,7 @@ if __name__=="__main__":
             ax[0].clear()
             ax[1].clear()
     elif data_name=='Ruinjin_pinyin':
-        from speech_pinyin.config import data_dir
+        from speech_pinyin_Ruijin.config import data_dir
         sid = 1
         folder = data_dir + str(sid) + '-*'
         folder = os.path.normpath(glob.glob(folder)[0])

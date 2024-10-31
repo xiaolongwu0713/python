@@ -336,7 +336,7 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
 
     elif dataset_name=='Ruinjin_pinyin':
         from scipy.io import wavfile
-        from speech_pinyin.config import data_dir
+        from speech_pinyin_Ruijin.config import data_dir
         sid = 1
         session=3
         folder = data_dir + str(sid) + '-*'
