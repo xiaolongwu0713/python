@@ -1,6 +1,6 @@
 from pre_all import *
 
-data_dir = top_data_dir+'speech_pinyin/'
+data_dir = top_data_dir+'speech_pinyin_Ruijin/'
 result_dir = data_dir + 'result/'
 meta_dir = data_dir #top_meta_dir+'speech_RuiJin/'
 ele_dir = data_dir + 'EleCTX_Files/'

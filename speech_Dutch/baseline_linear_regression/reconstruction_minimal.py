@@ -280,7 +280,7 @@ if __name__=="__main__":
     winL = opt['winL']
     frameshift = opt['frameshift']
     melbins=23
-    data_name='Ruinjin_pinyin' # 'SingleWordProductionDutch'/'mydata'/'Huashan'/'Ruinjin_pinyin'
+    data_name='Ruijin_pinyin' # 'SingleWordProductionDutch'/'mydata'/'Huashan'/'Ruijin_pinyin'
     if data_name=='mydata':
         sid=5
         session=1
@@ -322,7 +322,7 @@ if __name__=="__main__":
                 f.write(str(mse))
             ax[0].clear()
             ax[1].clear()
-    elif data_name=='Ruinjin_pinyin':
+    elif data_name=='Ruijin_pinyin':
         from speech_pinyin_Ruijin.config import data_dir
         sid = 1
         folder = data_dir + str(sid) + '-*'
