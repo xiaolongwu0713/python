@@ -343,18 +343,17 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         folder = os.path.normpath(glob.glob(folder)[0])
         folder = folder.replace("\\", "/")
         # TODO: use the session3_trials_list.npy file instead. To obtain a whole EEG data, just concatenate that file.
-        filename = folder + '/processed/session' + str(session) + '_trials_list.npy'
-        lists=np.load(filename, allow_pickle=True)
-        eeg=np.concatenate(lists, axis=0)
-        #raw=mne.io.read_raw_fif(filename)
-        #eeg=raw.get_data()
-        #eeg = eeg.transpose()  # (842376, 121) # 842.376s
+        filename = folder + '/processed/session' + str(session) + '_task_data_no_first_last_trial.fif'
+        raw=mne.io.read_raw_fif(filename)
+        eeg=raw.get_data()
+        eeg = eeg.transpose()  # (842376, 121) # 842.376s
         eeg_sr = 1000
         start_from=200 # s
         end=600 # s
         eeg=eeg[start_from*eeg_sr:end*eeg_sr,:]
 
-        filename = folder + '/processed/session' + str(session) + '_clean_audio_padded.wav'
+        # TODO: use the session3_clean_audio_padded.wav instead. It contains all trials, so just cut off whatever you don't like.
+        filename = folder + '/processed/session' + str(session) + '_clean_padded_no_first_last_trial.wav'
         audio_sr, audio = wavfile.read(filename)  # (40432263,) # 842.3388125s
         audio = audio[start_from*audio_sr:end * audio_sr:]
     # Extract HG features and average the window
