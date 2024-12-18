@@ -69,7 +69,7 @@ class_number=5
 fs=1000
 wind = 500
 stride = 200
-from gesture.config import time_stamps,ckpt_epochs
+#from gesture.config import time_stamps,ckpt_epochs
 
 
 gen_data_all=None
@@ -143,7 +143,7 @@ print('Result Path: '+result_path+'.')
 
 scaler='std' # 'std'/None
 #test_epochs, val_epochs, train_epochs, scaler=read_data(sid,fs,selected_channels=selected_channels,scaler=scaler)
-test_epochs, val_epochs, train_epochs, scaler=read_data_split_function(sid, fs, selected_channels=selected_channels,scaler='std',cv_idx=cv)
+test_epochs, val_epochs, train_epochs, scaler=read_data_split_function(sid, fs, selected_channels=selected_channels,scaler='std',cv_idx=cv,re_referencing=True)
 if method=='NI':
     std_scale=0.1 # 0.1: 0.75 how much noise added
     train_epochs_NI=noise_injection_epoch_list(train_epochs,std_scale)

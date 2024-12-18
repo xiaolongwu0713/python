@@ -20,20 +20,25 @@ from gesture.utils import windowed_data
 #device=torch.device('cpu')
 modality='SEEG'
 task='pinyin'
-sid=2 #
+sid=5 #
 sf=1000
+reactive_channels=[24,25,26,27,28,46,47,79,80,81,91,90,115,116,117,118,119,150,151,152,153,154]
+exclude=[16,17,18,23,34,35,100,141]
+channel_selection='exclude'
 
 folder=data_dir+str(sid)+'-*'
 folder=os.path.normpath(glob.glob(folder)[0])
 folder=folder.replace("\\", "/")
 result_dir=folder+'/result/'
-filename=folder+'/processed/'+task+'.fif'
+
+session=0
+filename=folder+'/processed/'+task+'_'+str(session)+'.fif'
 raw=mne.io.read_raw_fif(filename,preload=True)
 info=raw.info
 
 # normalization helps
 #raw.apply_function(lambda x: (x - np.mean(x) / np.std(x)))
-if 1==1:
+if 1==0:
     stim=raw.get_data(picks=['stim'])
     data=raw.get_data(picks=['eeg',]).transpose()
     scaler = StandardScaler()
@@ -42,13 +47,50 @@ if 1==1:
 
 events=mne.find_events(raw, stim_channel='Trigger')
 raw.drop_channels(['Trigger'])
-events=events[3:-1,:]
+if channel_selection=='reactive':
+    raw.pick(picks=[str(i) for i in reactive_channels])
+else:
+    raw.drop_channels([str(i) for i in exclude])
+#events=events[3:-1,:]
 events_tasks=np.asarray([tmp for tmp in events if tmp[-1] != 99])
-epochs_all = mne.Epochs(raw, events_tasks, tmin=3.5, tmax=5,baseline=None)
-epoch1=epochs_all['1'].get_data() # (16, 118, 1001)
-epoch2=epochs_all['2'].get_data()
-epoch3=epochs_all['3'].get_data()
-epoch4=epochs_all['4'].get_data()
+epochs_all = mne.Epochs(raw, events_tasks, tmin=3.5,tmax=7.4, baseline=None)
+epoch1a=epochs_all['1'].get_data() # (trial, channel, time)
+epoch2a=epochs_all['2'].get_data()
+epoch3a=epochs_all['3'].get_data()
+epoch4a=epochs_all['4'].get_data()
+
+
+session=1
+filename=folder+'/processed/'+task+'_'+str(session)+'.fif'
+raw=mne.io.read_raw_fif(filename,preload=True)
+info=raw.info
+
+# normalization helps
+#raw.apply_function(lambda x: (x - np.mean(x) / np.std(x)))
+if 1==0:
+    stim=raw.get_data(picks=['stim'])
+    data=raw.get_data(picks=['eeg',]).transpose()
+    scaler = StandardScaler()
+    data2 = scaler.fit_transform((data))
+    raw = mne.io.RawArray(np.concatenate((data2.transpose(),stim),axis=0), info)
+
+events=mne.find_events(raw, stim_channel='Trigger')
+raw.drop_channels(['Trigger'])
+if channel_selection=='reactive':
+    raw.pick(picks=[str(i) for i in reactive_channels])
+else:
+    raw.drop_channels([str(i) for i in exclude])
+events_tasks=np.asarray([tmp for tmp in events if tmp[-1] != 99])
+epochs_all = mne.Epochs(raw, events_tasks, tmin=3.5,tmax=7.4, baseline=None)
+epoch1b=epochs_all['1'].get_data() # (trials,channel,time)
+epoch2b=epochs_all['2'].get_data()
+epoch3b=epochs_all['3'].get_data()
+epoch4b=epochs_all['4'].get_data()
+
+epoch1=np.concatenate((epoch1a,epoch1b),axis=0)
+epoch2=np.concatenate((epoch2a,epoch2b),axis=0)
+epoch3=np.concatenate((epoch3a,epoch3b),axis=0)
+epoch4=np.concatenate((epoch4a,epoch4b),axis=0)
 
 if 1==0:
     # normalization here
@@ -70,8 +112,8 @@ train2,val2,test2=train_test_split(epoch2)
 train3,val3,test3=train_test_split(epoch3)
 train4,val4,test4=train_test_split(epoch4)
 
-wind=200
-stride=10
+wind=400
+stride=100
 train1,val1,test1=wind_list_of_2D(train1,wind, stride),wind_list_of_2D(val1,wind, stride),wind_list_of_2D(test1,wind, stride)
 train2,val2,test2=wind_list_of_2D(train2,wind, stride),wind_list_of_2D(val2,wind, stride),wind_list_of_2D(test2,wind, stride)
 train3,val3,test3=wind_list_of_2D(train3,wind, stride),wind_list_of_2D(val3,wind, stride),wind_list_of_2D(test3,wind, stride)
@@ -85,9 +127,10 @@ y_train=[0,]*len(train1)+[1,]*len(train2)+[2,]*len(train3)+[3,]*len(train4)
 y_val=[0,]*len(val1)+[1,]*len(val2)+[2,]*len(val3)+[3,]*len(val4)
 y_test=[0,]*len(test1)+[1,]*len(test2)+[2,]*len(test3)+[3,]*len(test4)
 
-train_set=myDataset(X_train,y_train)
-val_set=myDataset(X_val,y_val)
-test_set=myDataset(X_test,y_test)
+norm_in_dataset=True
+train_set=myDataset(X_train,y_train,norm=norm_in_dataset)
+val_set=myDataset(X_val,y_val,norm=norm_in_dataset)
+test_set=myDataset(X_test,y_test,norm=norm_in_dataset)
 
 batch_size = 20 # larger batch_size slows the training
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, pin_memory=False)
@@ -106,7 +149,7 @@ input_window_samples=one_window.shape[2]
 lr = 0.005
 weight_decay = 1e-10
 epoch_num = 500
-patients=10
+patients=20
 
 model_name='resnet'
 class_number=4
@@ -115,6 +158,7 @@ class_number=4
 net=deepnet(n_chans,class_number,wind) # 33%
 #net=d2lresnet_simple(class_num=class_number,end_with_logsoftmax=False) #34
 #net=d2lresnet(class_num=class_number,end_with_logsoftmax=False) # 28%
+
 net=net.to(device)
 criterion = torch.nn.CrossEntropyLoss()
 #criterion = torch.nn.BCEWithLogitsLoss()

@@ -5,6 +5,7 @@ import glob
 import os
 
 import scipy
+import soundfile
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import scipy.io.wavfile as wavfile
@@ -195,8 +196,8 @@ def baseline(data_name=None,sid=1,session=1,test_shift=False,test_shifts=None,mo
         #Load the data
         pt = 'sub-' + f"{sid:02d}"
         print("Running for "+pt+'.')
-        data,spectrogram=dataset(dataset_name=data_name,sid=sid,session=session,melbins=melbins,modelOrder=model_order,
-                                 stepSize=step_size,winL=winL, frameshift=frameshift)
+        data,spectrogram,audio=dataset(dataset_name=data_name,sid=sid,session=session,melbins=melbins,modelOrder=model_order,
+                                 stepSize=step_size,winL=winL, frameshift=frameshift,return_original_audio=True)
 
         #Initialize an empty spectrogram to save the reconstruction to
         rec_spec = np.zeros(spectrogram.shape)
@@ -280,7 +281,7 @@ if __name__=="__main__":
     winL = opt['winL']
     frameshift = opt['frameshift']
     melbins=23
-    data_name='Ruijin_pinyin' # 'SingleWordProductionDutch'/'mydata'/'Huashan'/'Ruijin_pinyin'
+    data_name='SingleWordProductionDutch' # 'SingleWordProductionDutch'/'mydata'/'Huashan'/'Ruijin_pinyin'
     if data_name=='mydata':
         sid=5
         session=1
@@ -296,9 +297,9 @@ if __name__=="__main__":
             exit()
     elif data_name=='SingleWordProductionDutch' or data_name=='Huashan':
         sids=[1,2,3,4,5,6,7,8,9,10]
-        #sids = [3,]
+        #sids = [1,3,]
         for sid in sids:
-            folder = data_dir + 'baseline_LR/SingleWordProductionDutch/mel_'+str(melbins)+'/sid' + str(sid) + '/'
+            folder = data_dir + 'results/reconstructed/mel_'+str(melbins)+'/sid' + str(sid) + '/'
             print('Result folder: '+folder+'.')
             if not os.path.exists(folder):
                 os.makedirs(folder)
@@ -322,6 +323,19 @@ if __name__=="__main__":
                 f.write(str(mse))
             ax[0].clear()
             ax[1].clear()
+
+            audiosr = 16000
+            winLength = winL
+            frameshift = frameshift
+            pred2 = createAudio(pred, audiosr=audiosr, winLength=winLength, frameshift=frameshift)
+            truth2 = createAudio(truth, audiosr=audiosr, winLength=winLength, frameshift=frameshift)
+            np.save(folder + 'waveform_truth.npy', truth2)
+            np.save(folder + 'waveform_pred.npy', pred2)
+
+            soundfile.write(folder + 'waveform_truth.wav', truth2, audiosr)
+            soundfile.write(folder + 'waveform_pred.wav', pred2, audiosr)
+
+
     elif data_name=='Ruijin_pinyin':
         from speech_pinyin_Ruijin.config import data_dir
         sid = 1

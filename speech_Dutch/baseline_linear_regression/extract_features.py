@@ -9,6 +9,7 @@ import numpy.matlib as matlib
 import scipy
 import scipy.signal
 import scipy.stats
+import soundfile
 from scipy.io import wavfile
 import scipy.fftpack
 
@@ -338,24 +339,25 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
         from scipy.io import wavfile
         from speech_pinyin_Ruijin.config import data_dir
         sid = 1
-        session=3
+        session = 3
         folder = data_dir + str(sid) + '-*'
         folder = os.path.normpath(glob.glob(folder)[0])
         folder = folder.replace("\\", "/")
         # TODO: use the session3_trials_list.npy file instead. To obtain a whole EEG data, just concatenate that file.
-        filename = folder + '/processed/session' + str(session) + '_task_data_no_first_last_trial.fif'
-        raw=mne.io.read_raw_fif(filename)
-        eeg=raw.get_data()
-        eeg = eeg.transpose()  # (842376, 121) # 842.376s
+        filename = folder + '/processed/session' + str(session) + '_trials_list.npy'
+        lists = np.load(filename, allow_pickle=True)
+        eeg = np.concatenate(lists[1:-1], axis=0)
+        # raw=mne.io.read_raw_fif(filename)
+        # eeg=raw.get_data()
+        # eeg = eeg.transpose()  # (842376, 121) # 842.376s
         eeg_sr = 1000
-        start_from=200 # s
-        end=600 # s
-        eeg=eeg[start_from*eeg_sr:end*eeg_sr,:]
+        start_from = 200  # s
+        end = 600  # s
+        eeg = eeg[start_from * eeg_sr:end * eeg_sr, :]
 
-        # TODO: use the session3_clean_audio_padded.wav instead. It contains all trials, so just cut off whatever you don't like.
-        filename = folder + '/processed/session' + str(session) + '_clean_padded_no_first_last_trial.wav'
+        filename = folder + '/processed/session' + str(session) + '_clean_audio_padded_no_first_last_denoised.wav'
         audio_sr, audio = wavfile.read(filename)  # (40432263,) # 842.3388125s
-        audio = audio[start_from*audio_sr:end * audio_sr:]
+        audio = audio[start_from * audio_sr:end * audio_sr:]
     # Extract HG features and average the window
     #frameshift = 256 / target_SR
     #winL = 1024 / target_SR
@@ -377,9 +379,9 @@ def dataset(dataset_name='mydata', sid=1, use_channels=False, session=1, test_sh
     if audio_sr != target_SR:
         audio=resampy.resample(audio, audio_sr, target_SR) # 48000 to 22050
     #audio = scipy.signal.decimate(audio, int(audio_sr / target_SR))  # (4805019,)
-    # os.makedirs(os.path.join(path_output), exist_ok=True)
-    # scipy.io.wavfile.write(os.path.join(path_output,f'{participant}_orig_audio.wav'),audio_sr,scaled)
-
+    #os.makedirs(os.path.join(path_output), exist_ok=True)
+    #soundfile.write(os.path.join(r'D:\data\BaiduSyncdisk\SingleWordProductionDutch',f'{participant}'+'\orig_audio.wav'),audio,target_SR)
+    #return
     # Extract spectrogram
     if use_the_official_tactron_with_waveglow:
         import torch

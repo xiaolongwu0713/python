@@ -21,7 +21,7 @@ from gesture.utils import windowed_data
 #device=torch.device('cpu')
 modality='SEEG'
 task='pinyin'
-sid=2 # 31%
+sid=5 # 31%
 sf=1000
 
 folder=data_dir+str(sid)+'-*'
@@ -43,9 +43,11 @@ if 1==1:
 
 events=mne.find_events(raw, stim_channel='Trigger')
 raw.drop_channels(['Trigger'])
-events=events[3:-1,:]
+reactive_channels=[24,25,26,27,28,46,47,79,80,81,91,90,115,116,117,118,119,150,151,152,153,154]
+raw.pick(picks=[str(i) for i in reactive_channels])
+#events=events[3:-1,:]
 events_tasks=np.asarray([tmp for tmp in events if tmp[-1] != 99])
-epochs_all = mne.Epochs(raw, events_tasks, tmin=3.5, tmax=4.5,baseline=None)#.load_data().resample(500)
+epochs_all = mne.Epochs(raw, events_tasks, tmin=3.5, tmax=7.3,baseline=None)#.load_data().resample(500)
 epoch1=epochs_all['1'].get_data() # (16, 118, 1001)
 epoch2=epochs_all['2'].get_data()
 epoch3=epochs_all['3'].get_data()

@@ -6,7 +6,7 @@
 # possible method of DA: 'VAE'/'cTGAN'/'WGANGP'/'NI'
 for sid in 25 29 32 34 41
 do
-  sid=10 # choose a single user to test
+  sid=41 # choose a single user to test
 
   for cv in 1 2 3 4 5
   do
@@ -17,11 +17,11 @@ do
     if [ $train_mode = 'original' ]
     then
       echo "CMD: Training sid: $sid using $network."
-      /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $cv
+      /cygdrive/d/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $cv
     elif [ $train_mode = 'DA' ]
     then
       DA_method='CWGANGP' #'cTGAN'
-      /cygdrive/c/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $DA_method $cv
+      /cygdrive/d/Users/xiaowu/anaconda3/envs/bci/python.exe main_all.py $sid $network $train_mode $DA_method $cv
     fi
 
     break # test for a single user only

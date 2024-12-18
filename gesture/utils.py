@@ -226,13 +226,18 @@ def get_epoch(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False
 
         return epochs_emg
 
-def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,trigger='EEG'):
-    data,channelNum=read_data_(sid) # data: (1052092, 212)
-    if scaler != 'no':
-        data, scalerr = norm_data(data, scaler=scaler)
-    epochs=gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG)
-    test_epochs, val_epochs, train_epochs = data_split(epochs, cv_idx=cv_idx)
-    return test_epochs, val_epochs, train_epochs, scalerr
+def read_data_split_function(sid, fs, selected_channels=None,scaler='std',cv_idx=None,EMG=False,trigger='EEG',re_referencing=True):
+    if re_referencing==True:
+        data,channelNum=read_data_(sid)
+        if scaler != 'no':
+            data, scalerr = norm_data(data, scaler=scaler)
+        epochs = gen_epoch(data, fs, channelNum, selected_channels=selected_channels, EMG=EMG)
+        test_epochs, val_epochs, train_epochs = data_split(epochs, cv_idx=cv_idx, re_referencing=re_referencing)
+        return test_epochs, val_epochs, train_epochs, scalerr
+    elif re_referencing==False:
+        epochs=gen_epoch2(sid) # data: (1052092, 212)
+        test_epochs, val_epochs, train_epochs = data_split(epochs, cv_idx=cv_idx, re_referencing=re_referencing)
+        return test_epochs, val_epochs, train_epochs
 
 
 # rest(4 s)--> cue (1s) ---> movement (5 s)
@@ -268,7 +273,7 @@ def gen_epoch(data,fs,channelNum,selected_channels=None, EMG=False,tmin=0,tmax=5
     return epochs
 
 def read_data_(sid):
-    data_folder = data_dir + 'preprocessing/' + 'P' + str(sid) + '/'
+    data_folder = data_dir + 'preprocessing/' + 'P' + str(sid) + '/' #  preprocessing/preprocessing_no_re_ref
     data_path = data_folder + 'preprocessing2.mat'
     mat = hdf5storage.loadmat(data_path)
     data = mat['Datacell']
@@ -279,6 +284,31 @@ def read_data_(sid):
     data = np.concatenate((data[0, 0], data[0, 1]), 0)
     del mat
     return data,channelNum
+
+def gen_epoch2(sid,tmin=0,tmax=5): # read the non re-referenced data;
+    save_folder = data_dir + 'preprocessing_no_re_ref/' + 'P' + str(sid) + '/'
+    filename = save_folder + 'emg_trigger_raw.fif'
+    raw = mne.io.read_raw_fif(filename)
+    events_eeg = mne.find_events(raw, stim_channel='trigger_index')
+    events_emg = mne.find_events(raw, stim_channel='trigger_index_emg')
+
+    if len(events_emg) == len(events_eeg):
+        epochs_eeg = mne.Epochs(raw, events_eeg, tmin=tmin, tmax=tmax, baseline=None)
+        epochs_emg = mne.Epochs(raw, events_emg, tmin=tmin, tmax=tmax, baseline=None)
+    else:
+        sys.exit("Events number obtained by EEG and EMG are not the same!!!")
+
+    # mark bad channels
+    good_channels = get_good_channels()
+    good_channel = good_channels['sid' + str(sid)]  # start from 1 (Matlab)
+    good_channel = [i - 1 for i in good_channel]
+    bad_channels_ind = [i for i in range(len(epochs_eeg.ch_names) - 7) if i not in good_channel]
+    bad_channels = [epochs_eeg.ch_names[c] for c in bad_channels_ind]
+    epochs_eeg.load_data()
+    epochs_eeg.drop_channels(bad_channels)
+
+    ch_number=sum([1 for i in epochs_eeg.get_channel_types() if i=='eeg'])
+    return epochs_eeg
 
 # standardization
 # StandardScaler will not clamp data between -1 and 1, but MinMaxScaler will [0,1].
@@ -302,12 +332,19 @@ def norm_data(data,scaler='std'):
         print('No scaler.')
     return data,scaler
 
-def data_split(epochs,cv_idx=None):
-    epoch1=epochs['0'].get_data() # 20 trials. 8001 time points per trial for 8s.
-    epoch2=epochs['1'].get_data()
-    epoch3=epochs['2'].get_data()
-    epoch4=epochs['3'].get_data()
-    epoch5=epochs['4'].get_data()
+def data_split(epochs,cv_idx=None,re_referencing=True):
+    if re_referencing==True:
+        epoch1=epochs['0'].get_data() # 20 trials. 8001 time points per trial for 8s.
+        epoch2=epochs['1'].get_data()
+        epoch3=epochs['2'].get_data()
+        epoch4=epochs['3'].get_data()
+        epoch5=epochs['4'].get_data()
+    else:
+        epoch1 = epochs['1'].get_data()  # 20 trials. 8001 time points per trial for 8s.
+        epoch2 = epochs['2'].get_data()
+        epoch3 = epochs['3'].get_data()
+        epoch4 = epochs['4'].get_data()
+        epoch5 = epochs['5'].get_data()
     list_of_epochs=[epoch1,epoch2,epoch3,epoch4,epoch5]
     total_len=list_of_epochs[0].shape[2]
 
